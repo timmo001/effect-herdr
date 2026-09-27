@@ -11,9 +11,12 @@ const directory = fileURLToPath(new URL("../", import.meta.url));
 const versionSchema = Schema.Struct({ version: Schema.String });
 const packageSchema = Schema.Struct({
   engines: Schema.Struct({ node: Schema.String }),
-  devEngines: Schema.Struct({
-    packageManager: Schema.Struct({ name: Schema.Literal("pnpm"), version: Schema.String }),
-  }),
+  devEngines: Schema.optionalKey(
+    Schema.Struct({
+      packageManager: Schema.Struct({ name: Schema.String, version: Schema.String }),
+    }),
+  ),
+  packageManager: Schema.optionalKey(Schema.String),
   dependencies: Schema.Record(Schema.String, Schema.String),
   devDependencies: Schema.Record(Schema.String, Schema.String),
 });
@@ -46,6 +49,20 @@ const doctorSdk = Effect.gen(function* () {
   const manifest = yield* parseDoctorPackage(
     yield* fs.readFileString(join(directory, "package.json")),
   );
+  // Corepack-style packageManager ("bun@1.4.2") is used when devEngines is absent.
+  const packageManagerField = /^([^@]+)@(.+)$/.exec(manifest.packageManager ?? "");
+  const selectedManager =
+    manifest.devEngines?.packageManager ??
+    (packageManagerField?.[1] && packageManagerField[2]
+      ? { name: packageManagerField[1], version: packageManagerField[2] }
+      : undefined);
+  if (!selectedManager) {
+    console.error(
+      "FAIL doctor metadata; package.json must declare devEngines.packageManager or packageManager.",
+    );
+    process.exitCode = 1;
+    return;
+  }
   /** @type {Array<[string, {status: string, detail: string}]>} */
   const checks = [];
   const minimum = /^>=(\d+)(?:\.(\d+))?(?:\.(\d+))?$/.exec(manifest.engines.node);
@@ -83,7 +100,7 @@ const doctorSdk = Effect.gen(function* () {
     },
   ]);
   // Keep the caller's selected manager when subprocess version switching is disabled.
-  const managerPath = process.env.npm_execpath ?? "pnpm";
+  const managerPath = process.env.npm_execpath ?? selectedManager.name;
   const managerIsJavaScript = /\.[cm]?js$/i.test(managerPath);
   const manager = yield* runVerificationCommand(
     managerIsJavaScript ? process.execPath : managerPath,
@@ -100,13 +117,11 @@ const doctorSdk = Effect.gen(function* () {
     "package manager",
     {
       status:
-        manager.status === "pass" && managerVersion === manifest.devEngines.packageManager.version
-          ? "pass"
-          : "fail",
+        manager.status === "pass" && managerVersion === selectedManager.version ? "pass" : "fail",
       detail:
         manager.status === "pass"
-          ? `pnpm ${managerVersion}; expected ${manifest.devEngines.packageManager.version} (${process.env.npm_execpath ? "invoking package manager" : "PATH; run pnpm run doctor to use the project-selected manager"})`
-          : `pnpm unavailable (${manager.detail}); no installation attempted`,
+          ? `${selectedManager.name} ${managerVersion}; expected ${selectedManager.version} (${process.env.npm_execpath ? "invoking package manager" : `PATH; run ${selectedManager.name} run doctor to use the project-selected manager`})`
+          : `${selectedManager.name} unavailable (${manager.detail}); no installation attempted`,
     },
   ]);
   for (const [name, requiredVersion] of Object.entries({

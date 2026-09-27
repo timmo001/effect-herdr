@@ -1,0 +1,9 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+  },
+  "globs": ["**/*.md"],
+  // Upstream's protocol research notes repeat headings by design.
+  "ignores": ["node_modules/**", "dist/**", "v0.9.0-22.md"],
+}

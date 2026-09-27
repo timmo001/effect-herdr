@@ -1,0 +1,37 @@
+min_version = "2025.1.0"
+
+[tools]
+node = "26.10.0"
+bun = "1.4.2"
+
+[tasks.install]
+description = "Install dependencies"
+run = "bun install"
+
+[tasks.lint]
+description = "Lint source with the Vite+ Oxlint config"
+run = "bun run lint"
+
+[tasks.typecheck]
+description = "Type-check source, type tests, tooling and examples"
+run = "bun run typecheck"
+
+[tasks.format]
+description = "Format source and configuration"
+run = "bun run format"
+
+[tasks."format:check"]
+description = "Check formatting without writing"
+run = "bun run format:check"
+
+[tasks.check]
+description = "Format check, lint, types, public docs, examples, generated drift, runtime tests and package smoke"
+run = "bun run check"
+
+[tasks.test]
+description = "Run SDK runtime and tooling tests"
+run = "bun run test"
+
+[tasks.build]
+description = "Regenerate wire types and build ESM and declarations into dist"
+run = "bun run build"

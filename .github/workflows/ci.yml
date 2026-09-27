@@ -1,0 +1,51 @@
+---
+name: CI
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - fork/main
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up mise
+        uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check
+        # Hosted runners need headroom above the local 120s per-stage default.
+        env:
+          HERDR_VERIFY_TIMEOUT_MS: "300000"
+        run: mise run check
+
+      - name: Build
+        run: mise run build
+
+  actionlint:
+    uses: timmo001/workflows/.github/workflows/lint-actionlint.yml@0f94251168336b74fadf271a955d24d1de4de343 # 20260927.1
+
+  markdownlint:
+    uses: timmo001/workflows/.github/workflows/lint-markdownlint.yml@0f94251168336b74fadf271a955d24d1de4de343 # 20260927.1
+
+  yamllint:
+    uses: timmo001/workflows/.github/workflows/lint-yamllint.yml@0f94251168336b74fadf271a955d24d1de4de343 # 20260927.1
+
+  jsonlint:
+    uses: timmo001/workflows/.github/workflows/lint-jsonlint.yml@0f94251168336b74fadf271a955d24d1de4de343 # 20260927.1

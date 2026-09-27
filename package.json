@@ -1,15 +1,15 @@
 {
-  "name": "@herdr/sdk",
+  "name": "@timmo001/effect-herdr",
   "version": "0.8.2-timmo001.0",
   "description": "Effect-native TypeScript SDK for Herdr's local socket API.",
-  "homepage": "https://github.com/timmo001/herdr-ts-sdk#readme",
+  "homepage": "https://github.com/timmo001/effect-herdr#readme",
   "bugs": {
-    "url": "https://github.com/timmo001/herdr-ts-sdk/issues"
+    "url": "https://github.com/timmo001/effect-herdr/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/timmo001/herdr-ts-sdk.git"
+    "url": "git+https://github.com/timmo001/effect-herdr.git"
   },
   "files": [
     "dist",
@@ -29,13 +29,18 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "generate": "node scripts/generate-wire-types.mjs && node scripts/sdk-verification-cli.mjs fmt src/generated",
-    "build": "pnpm run generate && node scripts/sdk-verification-cli.mjs pack",
+    "build": "bun run generate && node scripts/sdk-verification-cli.mjs pack",
     "dev": "node scripts/sdk-verification-cli.mjs pack --watch",
-    "test": "node scripts/sdk-verification-cli.mjs test",
+    "lint": "node scripts/sdk-verification-cli.mjs lint",
+    "typecheck": "tsc --noEmit --incremental false && tsc --project examples/tsconfig.json --noEmit --incremental false",
+    "format": "node scripts/sdk-verification-cli.mjs fmt",
+    "format:check": "node scripts/sdk-verification-cli.mjs fmt --check",
+    "test": "node scripts/sdk-verification-cli.mjs test run",
     "test:runtime": "node scripts/sdk-verification-cli.mjs test run",
     "test:platform": "node scripts/sdk-verification-cli.mjs test run src/herdr-platform.test.ts",
     "test:stress": "node scripts/sdk-verification-cli.mjs test run src/herdr-stress.test.ts",
@@ -48,11 +53,11 @@
     "trace:viewer": "node scripts/sdk-trace-viewer.mjs",
     "trace:list": "node scripts/sdk-trace-query.mjs list",
     "trace:show": "node scripts/sdk-trace-query.mjs show",
-    "check": "node scripts/sdk-verify.mjs quick",
+    "check": "node scripts/sdk-verify.mjs full",
     "check:docs": "node scripts/check-public-jsdoc.mjs",
     "check:examples": "tsc --project examples/tsconfig.json",
-    "example": "pnpm run build && node --experimental-strip-types",
-    "prepublishOnly": "pnpm run build"
+    "example": "bun run build && node --experimental-strip-types",
+    "prepack": "bun run build"
   },
   "dependencies": {
     "@effect/platform-node-shared": "4.0.0-rc.117",
@@ -64,19 +69,16 @@
     "bumpp": "^11.1.0",
     "json-schema-to-typescript": "^15.0.4",
     "typescript": "^7.0.2",
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.3",
+    "vite-plus": "0.3.3"
   },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "11.17.0",
-      "onFail": "download"
-    }
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.3"
   },
   "engines": {
     "node": ">=20"
   },
+  "packageManager": "bun@1.4.2",
   "herdr": {
     "protocol": 22,
     "upstreamCommit": "b99002ac99b09e00b4ca692436cb15a6b0d676f1"

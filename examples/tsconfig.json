@@ -2,7 +2,7 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@herdr/sdk": ["../src/index.ts"]
+      "@timmo001/effect-herdr": ["../src/index.ts"]
     }
   },
   "include": ["./**/*.ts"]

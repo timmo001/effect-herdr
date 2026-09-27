@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { HerdrSdk } from "@herdr/sdk";
+import { HerdrSdk } from "@timmo001/effect-herdr";
 import { runHerdrExample } from "./example-runtime.ts";
 
 const developmentWorkspace = Effect.gen(function* () {

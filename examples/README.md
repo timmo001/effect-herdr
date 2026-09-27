@@ -1,24 +1,24 @@
 # Herdr TypeScript SDK examples
 
 These examples are executable entrypoints for common local automation workflows. They use the
-public `@herdr/sdk` package API and ambient Herdr configuration—`HERDR_SOCKET_PATH`, `HERDR_SESSION`,
+public `@timmo001/effect-herdr` package API and ambient Herdr configuration—`HERDR_SOCKET_PATH`, `HERDR_SESSION`,
 or the platform's default session.
 
 ## Prerequisites
 
 1. Start a Herdr release compatible with this SDK's protocol and attach a foreground client.
-2. Install this repository with `pnpm install`.
+2. Install this repository with `bun install`.
 3. Use Node.js 22.6 or newer to run TypeScript directly, or adapt an example in an application that
-   depends on `@herdr/sdk`.
+   depends on `@timmo001/effect-herdr`.
 
 ```sh
-pnpm run example -- examples/session-inventory.ts
-HERDR_SESSION=work pnpm run example -- examples/live-agent-monitor.ts
-pnpm run example -- examples/multi-agent-idea-lab.ts "Design a safer release workflow"
+bun run example -- examples/session-inventory.ts
+HERDR_SESSION=work bun run example -- examples/live-agent-monitor.ts
+bun run example -- examples/multi-agent-idea-lab.ts "Design a safer release workflow"
 ```
 
 The `example` script builds the package before running the selected TypeScript file. All examples
-are also compiled by `pnpm run check:examples` and the repository-wide `pnpm run check` gate.
+are also compiled by `bun run check:examples` and the repository-wide `bun run check` gate.
 
 ## Use cases
 
@@ -47,7 +47,7 @@ These examples combine several capabilities into workflows meant to be adapted a
 
 - `feature-worktree.ts` sets `trustRepository: true`; run it only inside a repository you trust. Pass
   the desired branch as the first argument, for example
-  `pnpm run example -- examples/feature-worktree.ts feature/payment-api`.
+  `bun run example -- examples/feature-worktree.ts feature/payment-api`.
 - `development-workspace.ts`, `agent-code-review.ts`, `command-completion-notification.ts`, and
   `feature-worktree.ts` create persistent Herdr resources. They intentionally leave those resources
   open for inspection and continued work.

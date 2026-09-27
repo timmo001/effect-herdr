@@ -55,7 +55,7 @@ const checkGeneratedDrift = Effect.fn("checkGeneratedDrift")(
     if (missing.length || stale.length || changed.length) {
       return {
         status: "fail",
-        detail: `Generated drift; missing=[${missing.join(", ")}], stale=[${stale.join(", ")}], changed=[${changed.join(", ")}]. Run pnpm run generate explicitly.`,
+        detail: `Generated drift; missing=[${missing.join(", ")}], stale=[${stale.join(", ")}], changed=[${changed.join(", ")}]. Run bun run generate explicitly.`,
       };
     }
     return {
@@ -155,7 +155,7 @@ const verifySdk = Effect.gen(function* () {
   if (mode === "quick") {
     report("generated, runtime, package", {
       status: "skipped",
-      detail: "quick mode; run pnpm run verify for full coverage",
+      detail: "quick mode; run bun run verify for full coverage",
     });
   }
   console.log(`${failed ? "FAIL" : "PASS"} verification (${mode})`);

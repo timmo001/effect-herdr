@@ -1,4 +1,4 @@
-# `@herdr/sdk`
+# `@timmo001/effect-herdr`
 
 Effect-native TypeScript access to Herdr's local Unix-socket API.
 
@@ -9,7 +9,7 @@ precise errors, dependencies, and interruption.
 
 ```ts
 import { Effect } from "effect";
-import { HerdrSdk, herdrSdkLayer } from "@herdr/sdk";
+import { HerdrSdk, herdrSdkLayer } from "@timmo001/effect-herdr";
 
 const program = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
@@ -39,17 +39,24 @@ Bun consumers can install a pinned Git revision without building first. Bun uses
 export; TypeScript uses built declarations when available and source types otherwise.
 Packed Node.js consumers use the built ESM.
 
-`@herdr/sdk` is not currently published to npm. For Node.js, build and pack this repository:
+The first npm and JSR publication is pending. Until then, build and pack this repository with the
+[mise](https://mise.jdx.dev/getting-started.html)-pinned tools for Node.js:
 
 ```sh
-git clone https://github.com/dmmulroy/herdr-ts-sdk.git
-cd herdr-ts-sdk
-pnpm install
-pnpm run build
-pnpm pack
+git clone https://github.com/timmo001/effect-herdr.git
+cd effect-herdr
+mise install
+bun install --frozen-lockfile
+npm pack
 ```
 
-Then install the generated tarball in the consuming project and import from `@herdr/sdk`.
+Then install the generated tarball in the consuming project and import from
+`@timmo001/effect-herdr`. After publication, install it directly:
+
+```sh
+bun add @timmo001/effect-herdr
+npx jsr add @timmo001/effect-herdr
+```
 
 ## API shape
 
@@ -117,7 +124,7 @@ Use explicit options when an application owns SDK configuration:
 
 ```ts
 import { Effect, Duration } from "effect";
-import { HerdrSdk, herdrSdkLayerFromOptions } from "@herdr/sdk";
+import { HerdrSdk, herdrSdkLayerFromOptions } from "@timmo001/effect-herdr";
 
 const sdkLayer = herdrSdkLayerFromOptions({
   session: "work",
@@ -161,7 +168,7 @@ Advanced applications can depend on one service directly:
 
 ```ts
 import { Effect } from "effect";
-import { WorkspaceService, workspaceServiceLayer } from "@herdr/sdk";
+import { WorkspaceService, workspaceServiceLayer } from "@timmo001/effect-herdr";
 
 const labels = Effect.gen(function* () {
   const workspaces = yield* WorkspaceService;
@@ -453,7 +460,7 @@ Literal subscription tuples narrow the emitted event union:
 
 ```ts
 import { Effect, Stream } from "effect";
-import { HerdrSdk } from "@herdr/sdk";
+import { HerdrSdk } from "@timmo001/effect-herdr";
 
 const monitor = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
@@ -591,7 +598,7 @@ Public data is schema-owned. A schema value such as `Workspace` also owns the co
 `Workspace` TypeScript type. Operation inputs additionally expose `...Encoded` interfaces when the
 ergonomic caller representation differs from the normalized type.
 
-Protocol-22 interaction models are exported from `herdr-pane-interaction-models.ts`; endpoint projection, surface, lifecycle, and graphics schemas from `herdr-client-shell-models.ts`; semantic key/mouse inputs from `herdr-client-shell-input.ts`. Connection input and ownership interfaces belong to `client-shell-service.ts`. All are re-exported by `@herdr/sdk`; generated wire contracts remain private.
+Protocol-22 interaction models are exported from `herdr-pane-interaction-models.ts`; endpoint projection, surface, lifecycle, and graphics schemas from `herdr-client-shell-models.ts`; semantic key/mouse inputs from `herdr-client-shell-input.ts`. Connection input and ownership interfaces belong to `client-shell-service.ts`. All are re-exported by `@timmo001/effect-herdr`; generated wire contracts remain private.
 
 ### Domain primitives
 
@@ -736,8 +743,8 @@ with the focused recipes, then explore the multi-agent idea lab, declarative com
 animated graphics beacon, and attention-sorted agent rescue view.
 
 ```sh
-pnpm run example -- examples/session-inventory.ts
-pnpm run example -- examples/multi-agent-idea-lab.ts "Design a safer release workflow"
+bun run example -- examples/session-inventory.ts
+bun run example -- examples/multi-agent-idea-lab.ts "Design a safer release workflow"
 ```
 
 See [`examples/README.md`](examples/README.md) for prerequisites, side effects, and the complete
@@ -755,30 +762,31 @@ packages, never reference source.
 With dependencies already installed, run from the repository root:
 
 ```sh
-pnpm run doctor
-pnpm run verify:quick
+bun install --frozen-lockfile
+bun run doctor
+bun run verify:quick
 ./node_modules/.bin/vitest run src/herdr-sdk.test.ts
-pnpm run verify
+mise run check
+mise run build
 ```
 
 Quick verification checks formatting, lint, types, public docs, and examples. Full verification
 adds generated drift, runtime suites, and an isolated package consumer. See the
 [workflow command table](docs/agent-workflow.md#verification-commands) for focused checks and
-`pnpm run lab --list` for fixture-only executable learning recipes. For opt-in OpenTelemetry
+`bun run lab --list` for fixture-only executable learning recipes. For opt-in OpenTelemetry
 export, a loopback viewer, and agent-readable trace queries, follow
 [local tracing](docs/local-tracing.md). No SDK import starts telemetry or a viewer.
 
-A globally managed `pnpm` launcher may bootstrap dependencies. For strict no-bootstrap checks,
-use `node scripts/sdk-doctor.mjs` and `node scripts/sdk-verify.mjs quick` (or `full` / `generated`).
+For checks that bypass the package manager, use `node scripts/sdk-doctor.mjs` and `node scripts/sdk-verify.mjs quick` (or `full` / `generated`).
 
 Tests use isolated local fixtures, never live Herdr control.
 Runtime tests do not check `.tst.ts` inference contracts;
 those require typechecking. Live [examples](examples/README.md) have explicit side effects and
 are not verification commands.
 
-`pnpm run check` checks formatting, lint, types, public docs, and examples without fixing files.
-Keep writing commands separate from shared-checkout verification: `pnpm run generate` rewrites
-private wire contracts from `schema/herdr-api.schema.json`, and `pnpm run build` regenerates before
+`mise run check` (`bun run check`) runs full verification without fixing files.
+Keep writing commands separate from shared-checkout verification: `bun run generate` rewrites
+private wire contracts from `schema/herdr-api.schema.json`, and `bun run build` regenerates before
 producing package output. Direct Vite+ formatting without `--check` and fixing with `--fix` also
 write files. Generated wire contracts
 remain private; [src/index.ts](src/index.ts) owns the public entrypoint.

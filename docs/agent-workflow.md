@@ -40,7 +40,7 @@ experiment into a justified regression test. Keep temporary experiments out of t
 The [learning tests](../src/herdr-learning.test.ts) own assertion-bearing recipes and hypothesis
 comments. The [lab runner](../scripts/sdk-lab.mjs) derives its catalog from those declarations;
 it accepts only a listed scenario, uses local fixtures, bounds execution, and cleans temporary output.
-Run `pnpm run lab --list`, then `pnpm run lab --scenario <exact-id>`.
+Run `bun run lab --list`, then `bun run lab --scenario <exact-id>`.
 It is not an arbitrary code, shell, or live-socket runner.
 
 Other useful routes (commands run from the repository root):
@@ -62,27 +62,26 @@ Examples may send terminal input, launch agents, or change live state; they are 
 
 Run from the repository root with installed dependencies. These checks do not rewrite tracked
 source/generated files or contact live Herdr. Temporary build/fixture output is scope-owned.
-A globally managed `pnpm` launcher may bootstrap dependencies before running a package script.
-For strict no-bootstrap verification, bypass that launcher: `node scripts/sdk-doctor.mjs` or
+To bypass the package manager, run `node scripts/sdk-doctor.mjs` or
 `node scripts/sdk-verify.mjs quick` (also accepts `full` or `generated`).
 
-| Command                    | Evidence and limits                                                                                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm run doctor`          | Reports runtime/tool/dependency/protocol alignment and an isolated socket bind/close probe; no installs, repairs, or independent upstream commit verification.                                   |
-| `pnpm run verify:quick`    | Format check, lint, types (including `.tst.ts` and tooling JS), public JSDoc, and example compilation; no runtime, generation drift, or package check. `pnpm run check` is the same quick route. |
-| `pnpm run verify`          | Quick stages plus generated drift, runtime suites, and isolated package verification.                                                                                                            |
-| `pnpm run test:runtime`    | Runtime Vitest suites, including tooling tests; not a substitute for typechecking.                                                                                                               |
-| `pnpm run check:generated` | Regenerates into a temporary directory and compares with tracked wire files; reports drift without rewriting them.                                                                               |
-| `pnpm run check:package`   | Builds/packs an offline temporary consumer and checks runtime imports/declarations using the installed dependency graph; does not prove registry dependency resolution.                          |
-| `pnpm run test:platform`   | Host platform fixture coverage; a pass on one OS does not prove other operating systems.                                                                                                         |
-| `pnpm run test:stress`     | Seeded repeated local lifecycle scenarios; reproduction controls live in [stress tests](../src/herdr-stress.test.ts), not a second defaults inventory.                                           |
-| `pnpm run lab --list`      | Lists executable learning recipes; use `--scenario <exact-id>` for one bounded experiment.                                                                                                       |
+| Command                   | Evidence and limits                                                                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bun run doctor`          | Reports runtime/tool/dependency/protocol alignment and an isolated socket bind/close probe; no installs, repairs, or independent upstream commit verification.                             |
+| `bun run verify:quick`    | Format check, lint, types (including `.tst.ts` and tooling JS), public JSDoc, and example compilation; no runtime, generation drift, or package check. `bun run check` is full, not quick. |
+| `bun run verify`          | Quick stages plus generated drift, runtime suites, and isolated package verification. `mise run check` and `bun run check` run the same route.                                             |
+| `bun run test:runtime`    | Runtime Vitest suites, including tooling tests; not a substitute for typechecking.                                                                                                         |
+| `bun run check:generated` | Regenerates into a temporary directory and compares with tracked wire files; reports drift without rewriting them.                                                                         |
+| `bun run check:package`   | Builds/packs an offline temporary consumer and checks runtime imports/declarations using the installed dependency graph; does not prove registry dependency resolution.                    |
+| `bun run test:platform`   | Host platform fixture coverage; a pass on one OS does not prove other operating systems.                                                                                                   |
+| `bun run test:stress`     | Seeded repeated local lifecycle scenarios; reproduction controls live in [stress tests](../src/herdr-stress.test.ts), not a second defaults inventory.                                     |
+| `bun run lab --list`      | Lists executable learning recipes; use `--scenario <exact-id>` for one bounded experiment.                                                                                                 |
 
 Full verification is broader than a focused pass, not exhaustive scheduler or platform proof.
 [Verification runner](../scripts/sdk-verification-runner.mjs) owns stage selection and deadlines;
 [package scripts](../package.json) own command dispatch. Add `--trace` to a lab, runtime test
-command, or verification run for opt-in local export. `pnpm run trace:viewer --check` checks the
-separately installed viewer; `pnpm run trace:list` and `pnpm run trace:show -- <trace-id>` query it.
+command, or verification run for opt-in local export. `bun run trace:viewer --check` checks the
+separately installed viewer; `bun run trace:list` and `bun run trace:show -- <trace-id>` query it.
 See [local tracing](local-tracing.md) for configuration, safety, and evidence limits.
 
 ## Verification discipline
@@ -91,7 +90,7 @@ See [local tracing](local-tracing.md) for configuration, safety, and evidence li
 2. Run the relevant runtime file with `./node_modules/.bin/vitest run <test-file>`.
 3. Check compile-time `.tst.ts` contracts with the repository typecheck, not Vitest alone.
 4. Select broader commands from [package.json](../package.json) after inspecting what they run.
-   `check` is the non-mutating quick route. `generate` rewrites private wire files; `build`
+   `check` is the non-mutating full route. `generate` rewrites private wire files; `build`
    regenerates before packaging. Direct Vite+ formatting without `--check` and fixing with `--fix`
    write files. Do not use writing commands as verification in a shared checkout.
 5. For guide edits, run `./node_modules/.bin/vitest run scripts/agent-context.test.ts`:

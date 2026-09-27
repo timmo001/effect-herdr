@@ -1,4 +1,4 @@
-# Working on @herdr/sdk
+# Working on @timmo001/effect-herdr
 
 ## Start here
 
@@ -42,7 +42,8 @@ constructor exports; do not turn a focused change into an API migration. Read
 ## Before handing off
 
 Run focused tests with `./node_modules/.bin/vitest run <test-file>` from the repository root.
-Use `pnpm run doctor`, `pnpm run verify:quick`, and `pnpm run verify` as described in the workflow.
+Use `bun run doctor`, `bun run verify:quick`, and `mise run check` (full verification) as described
+in the workflow.
 For strict no-bootstrap checks, bypass managed package-manager launchers with
 `node scripts/sdk-doctor.mjs` / `node scripts/sdk-verify.mjs quick` (or `full` / `generated`).
 Use the workflow's verification guidance before broader checks. `check` checks by default;

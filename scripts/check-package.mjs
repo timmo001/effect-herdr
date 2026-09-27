@@ -46,6 +46,9 @@ const runPackageCommand = Effect.fnUntraced(
 
 const findNpmEntrypoint = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
+  // Version managers such as mise can put a shell wrapper at bin/npm; prefer the bundled npm CLI.
+  const bundled = join(dirname(process.execPath), "../lib/node_modules/npm/bin/npm-cli.js");
+  if (process.platform !== "win32" && (yield* fs.exists(bundled))) return bundled;
   for (const directory of (process.env.PATH ?? "").split(delimiter)) {
     const candidate =
       process.platform === "win32"
