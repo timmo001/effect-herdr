@@ -2,14 +2,14 @@
   "name": "@herdr/sdk",
   "version": "0.9.0",
   "description": "Effect-native TypeScript SDK for Herdr's local socket API.",
-  "homepage": "https://github.com/dmmulroy/herdr-ts-sdk#readme",
+  "homepage": "https://github.com/timmo001/herdr-ts-sdk#readme",
   "bugs": {
-    "url": "https://github.com/dmmulroy/herdr-ts-sdk/issues"
+    "url": "https://github.com/timmo001/herdr-ts-sdk/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dmmulroy/herdr-ts-sdk.git"
+    "url": "git+https://github.com/timmo001/herdr-ts-sdk.git"
   },
   "files": [
     "dist",
