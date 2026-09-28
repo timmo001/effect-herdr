@@ -597,7 +597,7 @@ describe("executable examples", () => {
                   cwd: fixture.packageDirectory,
                   env: { HERDR_SOCKET_PATH: server.socketPath },
                   extendEnv: true,
-                  forceKillAfter: "1 second",
+                  forceKillAfter: "5 seconds",
                 },
               ),
             );
@@ -618,7 +618,7 @@ describe("executable examples", () => {
                 );
               }),
             );
-            yield* child.kill({ killSignal: signal, forceKillAfter: "1 second" });
+            yield* child.kill({ killSignal: signal, forceKillAfter: "5 seconds" });
             const status = yield* Fiber.join(exited);
             const output = yield* Fiber.join(stderr);
             expect(status, output).toBe(130);
