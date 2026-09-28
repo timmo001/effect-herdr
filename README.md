@@ -1,5 +1,9 @@
 # `@timmo001/effect-herdr`
 
+> [!NOTE]
+> This is a fork of Dillon Mulroy's [herdr-ts-sdk](https://github.com/dmmulroy/herdr-ts-sdk), and
+> full credit for the original project goes to him. This fork adds my own changes on top.
+
 Effect-native TypeScript access to Herdr's local Unix-socket API.
 
 The SDK exposes every Herdr operation as a typed `Effect`, decodes public inputs and wire responses
