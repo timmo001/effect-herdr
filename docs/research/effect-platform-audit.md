@@ -152,7 +152,7 @@ However, direct adoption currently has four semantic gaps:
    transport deliberately destroys a socket when a backpressured write is interrupted
    ([source](../../src/herdr-transport.ts#L489)), and the graphics timeout test depends on
    that close-on-uncertain-frame behavior.
-4. consumers that need the typed socket API and errors cross the `effect/unstable/socket` surface,
+4. consumers that need the typed socket API and errors cross the `effect/socket` surface,
    even though the Node package entry point itself is published. This beta API and the added
    `@effect/platform-node` dependency should be isolated behind `HerdrTransport`.
 

@@ -2,8 +2,7 @@
  * Effect-native Vitest execution boundary for optional local development tracing.
  * @since 0.8.2
  */
-import { Cause, Console, Effect, type Scope } from "effect";
-import { Arbitrary } from "effect/unstable/arbitrary";
+import { Arbitrary, Cause, Console, Effect, type Scope } from "effect";
 import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { TestContext } from "vite-plus/test";

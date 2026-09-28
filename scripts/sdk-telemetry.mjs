@@ -15,13 +15,8 @@ import {
   Stream,
   Tracer,
 } from "effect";
-import { FetchHttpClient, HttpClient } from "effect/unstable/http";
-import {
-  OtlpExporter,
-  OtlpLogger,
-  OtlpSerialization,
-  OtlpTracer,
-} from "effect/unstable/observability";
+import { FetchHttpClient, HttpClient } from "effect/http";
+import { OtlpExporter, OtlpLogger, OtlpSerialization, OtlpTracer } from "effect/observability";
 import {
   approvedSdkTelemetryAttribute,
   sdkTelemetryAttributeKeys,
@@ -98,7 +93,7 @@ const partialResponse = Schema.Struct({
 });
 const decodePartialResponse = Schema.decodeEffect(Schema.fromJsonString(partialResponse));
 /** Bound collector acknowledgement bytes before JSON parsing; Fetch's text getter ignores MaxBodySize.
- * @param {import("effect/unstable/http/HttpClientResponse").HttpClientResponse} response
+ * @param {import("effect/http/HttpClientResponse").HttpClientResponse} response
  */
 const sdkTelemetryAcknowledgement = (response) =>
   Effect.gen(function* () {

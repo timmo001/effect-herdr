@@ -1,6 +1,6 @@
 {
   "name": "@timmo001/effect-herdr",
-  "version": "0.8.2-timmo001.1",
+  "version": "0.8.2-timmo001.2",
   "description": "Effect-native TypeScript SDK for Herdr's local socket API.",
   "homepage": "https://github.com/timmo001/effect-herdr#readme",
   "bugs": {

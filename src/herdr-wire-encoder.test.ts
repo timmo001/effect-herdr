@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { Arbitrary } from "effect/unstable/arbitrary";
+import { Arbitrary } from "effect";
 import { expect, test } from "vite-plus/test";
 import { assertHerdrProperty, runHerdrTest } from "./herdr-test-runtime.ts";
 import {

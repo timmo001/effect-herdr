@@ -1,7 +1,6 @@
 import { NodeSocket } from "@effect/platform-node-shared";
-import { Deferred, Duration, Effect, Exit, Fiber, Schema, Stream } from "effect";
-import { Socket } from "effect/unstable/socket";
-import { Arbitrary } from "effect/unstable/arbitrary";
+import { Arbitrary, Deferred, Duration, Effect, Exit, Fiber, Schema, Stream } from "effect";
+import { Socket } from "effect/socket";
 import { beforeEach, expect, test } from "vite-plus/test";
 import { assertHerdrProperty, runHerdrTest } from "./herdr-test-runtime.ts";
 import { HerdrAbsolutePath, HerdrSdk, herdrSdkLayerFromOptions } from "./index.ts";
@@ -77,10 +76,10 @@ test(
           Schema.Struct({
             widths: Schema.Array(
               Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 257 })),
-            ).check(Schema.isLengthBetween(1, 12)),
+            ).check(Schema.isBetweenLength(1, 12)),
             suffixes: Schema.Array(
               Schema.Literals(["漢字", "e\u0301", '"quoted"', "line\nbreak", "🦊"]),
-            ).check(Schema.isLengthBetween(3, 8)),
+            ).check(Schema.isBetweenLength(3, 8)),
           }),
         ),
         ({ widths, suffixes }) =>
@@ -165,7 +164,7 @@ test(
             sendPartialResponse: Schema.Boolean,
             releaseOrder: Schema.Array(
               Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 3 })),
-            ).check(Schema.isLengthBetween(4, 4), Schema.isUnique()),
+            ).check(Schema.isBetweenLength(4, 4), Schema.isUnique()),
           }),
         ),
         ({ canceledIndex, sendPartialResponse, releaseOrder }) =>
@@ -274,7 +273,7 @@ test(
               length: Schema.Literals([1, 255, 4096, 65537, 131072]),
               salt: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 255 })),
             }),
-          ).check(Schema.isLengthBetween(3, 7)),
+          ).check(Schema.isBetweenLength(3, 7)),
         ),
         (frames) =>
           Effect.scoped(
