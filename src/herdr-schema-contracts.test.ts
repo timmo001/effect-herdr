@@ -1,5 +1,4 @@
-import { Duration, Effect, Option, Schema } from "effect";
-import { Arbitrary } from "effect/unstable/arbitrary";
+import { Arbitrary, Duration, Effect, Option, Schema } from "effect";
 import { expect, test } from "vite-plus/test";
 import {
   AgentName,
@@ -58,7 +57,7 @@ test("state labels accept any subset of known statuses and reject unknown names"
     assertHerdrProperty(
       Arbitrary.schema(
         Schema.Array(Schema.Boolean).check(
-          Schema.isLengthBetween(statuses.length, statuses.length),
+          Schema.isBetweenLength(statuses.length, statuses.length),
         ),
       ),
       (included) =>

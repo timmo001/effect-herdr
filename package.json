@@ -60,9 +60,9 @@
     "prepack": "bun run build"
   },
   "dependencies": {
-    "@effect/platform-node-shared": "4.0.0-rc.117",
+    "@effect/platform-node-shared": "4.0.0-rc.118",
     "ajv": "^8.20.0",
-    "effect": "4.0.0-rc.117"
+    "effect": "4.0.0-rc.118"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
