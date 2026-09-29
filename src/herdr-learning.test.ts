@@ -1,8 +1,7 @@
-import { Deferred, Effect, Stream } from "effect";
+import { Effect, Stream } from "effect";
 import { expect, test } from "vite-plus/test";
 import {
   HerdrAbsolutePath,
-  HerdrGraphicsStreamClosed,
   HerdrInvalidResponse,
   HerdrSdk,
   herdrSdkLayerFromOptions,
@@ -132,82 +131,6 @@ test("sdk learning: scoped-subscription", (context) =>
         }),
       );
       expect(server.openSocketMethods()).not.toContain("events.subscribe");
-    }),
-  ));
-
-// Controls: two distinct tiny payloads; capture their bytes, then let the writer escape its scope.
-// Hypothesis: Concurrent graphics writes serialize complete frames; scope closure invalidates the writer.
-test("sdk learning: graphics-writer", (context) =>
-  runHerdrTest(
-    context,
-    Effect.gen(function* () {
-      const received = yield* Deferred.make<void>();
-      const run = Effect.runForkWith(yield* Effect.context<never>());
-      const chunks: Buffer[] = [];
-      const server = yield* startHerdrTestServer((request, socket) =>
-        Effect.sync(() => {
-          if (request.method === "pane.graphics.stream") {
-            socket.on("data", (chunk: Buffer) => {
-              chunks.push(chunk);
-              // Payloads have no newline: two header newlines and both payloads complete the observation.
-              const bytes = Buffer.concat(chunks);
-              const secondHeader = bytes.indexOf(10, bytes.indexOf(10) + 1);
-              if (secondHeader >= 0 && bytes.length >= secondHeader + 4) {
-                run(Deferred.succeed(received, undefined));
-              }
-            });
-          }
-          return makeHerdrSuccessResponse(request);
-        }),
-      );
-      const frame = (byte: number) => ({
-        format: "png" as const,
-        imageWidth: 1,
-        imageHeight: 1,
-        data: Uint8Array.of(byte, byte, byte),
-      });
-      yield* runLearningSdk(
-        server.socketPath,
-        Effect.gen(function* () {
-          const sdk = yield* HerdrSdk;
-          const writer = yield* Effect.scoped(
-            Effect.gen(function* () {
-              const acquired = yield* sdk.panes.graphics.openStream(sdk.ids.pane("pane-learning"));
-              yield* Effect.all([acquired.write(frame(1)), acquired.write(frame(2))], {
-                concurrency: "unbounded",
-              });
-              yield* Deferred.await(received);
-              return acquired;
-            }),
-          );
-          const closed = yield* writer.write(frame(3)).pipe(Effect.flip);
-          expect(closed).toBeInstanceOf(HerdrGraphicsStreamClosed);
-          yield* server.waitFor("close", 2);
-        }),
-      );
-      const bytes = Buffer.concat(chunks);
-      let offset = 0;
-      const payloads: number[][] = [];
-      for (let index = 0; index < 2; index++) {
-        const newline = bytes.indexOf(10, offset);
-        expect(newline).toBeGreaterThan(offset);
-        const header: unknown = JSON.parse(bytes.subarray(offset, newline).toString("utf8"));
-        expect(header).toMatchObject({
-          format: "png",
-          data_length: 3,
-          image_width: 1,
-          image_height: 1,
-        });
-        payloads.push([...bytes.subarray(newline + 1, newline + 4)]);
-        offset = newline + 4;
-      }
-      expect(payloads).toEqual(
-        expect.arrayContaining([
-          [1, 1, 1],
-          [2, 2, 2],
-        ]),
-      );
-      expect(offset).toBe(bytes.length);
     }),
   ));
 

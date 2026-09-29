@@ -1,12 +1,11 @@
 /**
  * Defines the typed failures exposed by Herdr SDK operations.
  *
- * Schema-backed tagged errors distinguish configuration, input, transport, timeout, compatibility, server, response, event, and graphics failures for targeted recovery.
+ * Schema-backed tagged errors distinguish configuration, input, transport, timeout, compatibility, server, response, and event failures for targeted recovery.
  *
  * @since 0.8.2
  */
-import { Option, Schema } from "effect";
-import { HerdrByteLength } from "./herdr-domain.ts";
+import { Schema } from "effect";
 
 /**
  * Failure to decode or resolve Herdr SDK configuration.
@@ -66,13 +65,7 @@ export class HerdrInvalidInput extends Schema.TaggedError<HerdrInvalidInput>()(
 export class HerdrTransportError extends Schema.TaggedError<HerdrTransportError>()(
   "HerdrTransportError",
   {
-    operation: Schema.Literals([
-      "request",
-      "compatibility_check",
-      "event_subscription",
-      "graphics_stream",
-      "graphics_write",
-    ]),
+    operation: Schema.Literals(["request", "compatibility_check", "event_subscription"]),
     reason: Schema.Literals(["connect", "read", "write", "premature_close"]),
     requestId: Schema.String,
     message: Schema.String,
@@ -105,13 +98,7 @@ export class HerdrTransportError extends Schema.TaggedError<HerdrTransportError>
 export class HerdrRequestTimeout extends Schema.TaggedError<HerdrRequestTimeout>()(
   "HerdrRequestTimeout",
   {
-    operation: Schema.Literals([
-      "request",
-      "compatibility_check",
-      "event_subscription",
-      "graphics_stream",
-      "graphics_write",
-    ]),
+    operation: Schema.Literals(["request", "compatibility_check", "event_subscription"]),
     requestId: Schema.String,
     timeoutMilliseconds: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
     message: Schema.String,
@@ -262,92 +249,6 @@ export class HerdrServerError extends Schema.TaggedError<HerdrServerError>()("He
       serverMessage,
       requestId,
       message: `Herdr server rejected the request with ${serverCode}: ${serverMessage}`,
-    });
-  }
-}
-
-/**
- * Graphics frame has invalid data or dimensions.
- *
- * @category errors
- * @since 0.8.2
- */
-export class HerdrInvalidFrame extends Schema.TaggedError<HerdrInvalidFrame>()(
-  "HerdrInvalidFrame",
-  {
-    operation: Schema.Literals(["graphics_set", "graphics_stream"]),
-    reason: Schema.Literals(["empty_data", "schema_mismatch"]),
-    requestId: Schema.Option(Schema.String),
-    message: Schema.String,
-  },
-) {
-  /** Creates a graphics frame parse failure before bytes are written. */
-  constructor(
-    operation: HerdrInvalidFrame["operation"],
-    reason: HerdrInvalidFrame["reason"],
-    requestId?: string,
-  ) {
-    super({
-      operation,
-      reason,
-      requestId: Option.fromNullishOr(requestId),
-      message: `Herdr graphics frame is invalid during ${operation}: ${reason}. Supply non-empty data with positive integer dimensions.`,
-    });
-  }
-}
-
-/**
- * Graphics image exceeds the byte limit for its write mode.
- *
- * @category errors
- * @since 0.8.2
- */
-export class HerdrImageTooLarge extends Schema.TaggedError<HerdrImageTooLarge>()(
-  "HerdrImageTooLarge",
-  {
-    operation: Schema.Literals(["graphics_set", "graphics_stream"]),
-    actualBytes: HerdrByteLength,
-    maximumBytes: HerdrByteLength,
-    requestId: Schema.Option(Schema.String),
-    message: Schema.String,
-  },
-) {
-  /** Creates an oversized graphics image failure before socket I/O. */
-  constructor(
-    operation: HerdrImageTooLarge["operation"],
-    actualBytes: number,
-    maximumBytes: number,
-    requestId?: string,
-  ) {
-    super({
-      operation,
-      actualBytes: HerdrByteLength.make(actualBytes),
-      maximumBytes: HerdrByteLength.make(maximumBytes),
-      requestId: Option.fromNullishOr(requestId),
-      message: `Herdr graphics image is too large during ${operation}: received ${actualBytes} bytes, maximum ${maximumBytes} bytes. Reduce the image size and try again.`,
-    });
-  }
-}
-
-/**
- * Graphics writer was used after its owning scope closed.
- *
- * @category errors
- * @since 0.8.2
- */
-export class HerdrGraphicsStreamClosed extends Schema.TaggedError<HerdrGraphicsStreamClosed>()(
-  "HerdrGraphicsStreamClosed",
-  {
-    requestId: Schema.String,
-    message: Schema.String,
-  },
-) {
-  /** Creates a closed-resource failure for a graphics write. */
-  constructor(requestId: string) {
-    super({
-      requestId,
-      message:
-        "Herdr graphics stream is closed. Acquire a new writer inside an active Effect scope.",
     });
   }
 }

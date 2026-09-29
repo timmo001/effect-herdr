@@ -13,7 +13,7 @@ visible for application composition.
 
 Each protocol-facing namespace owns an independent Effect service with its interface, contextual
 service class, constructor, dependency-preserving Layer, and ready production Layer. Nested
-capabilities such as pane graphics and plugin resources remain parent-owned values because they do
+capabilities such as pane interaction and plugin resources remain parent-owned values because they do
 not have independent dependencies or lifecycles.
 
 ## Domain and protocol boundaries
@@ -36,10 +36,9 @@ correlation, bounded newline framing, response parsing, compatibility memoizatio
 stream handshakes, and interruption-safe cleanup. Lifecycle subscriptions are live-only from server
 acceptance; cache consumers bootstrap by buffering an accepted subscription across a session snapshot.
 
-Ordinary requests own one socket through `Effect.acquireUseRelease`. Event subscriptions and pane
-graphics streams use scoped acquisition. Event consumption and callback-owned graphics writers hide ordinary Scope management; explicit graphics acquisition remains available for advanced composition. Event reads are pull-based and
-backpressured. Graphics writes are serialized as complete frames, and a timed-out or interrupted
-write closes and invalidates its writer because the remote frame outcome is uncertain.
+Ordinary requests own one socket through `Effect.acquireUseRelease`. Event subscriptions use scoped
+acquisition. Event consumption hides ordinary Scope management. Event reads are pull-based and
+backpressured.
 
 ### Client-shell endpoint ownership
 
@@ -65,11 +64,10 @@ graphics file paths and does not negotiate direct graphics. Lost or ambiguous mu
 Workspace creation separates default, explicit-directory, and source-workspace intent into named
 methods sharing private dispatch. Command invocation similarly separates current/workspace/tab/pane
 context; selection belongs only to the pane method. Both remove ambiguous cross-field combinations
-without requiring caller-authored `_tag` values. Graphics callbacks reuse existing scoped acquisition,
-not a second writer implementation.
+without requiring caller-authored `_tag` values.
 
 The baseline audit retains composable domain unions for pane destinations/swaps, layout targets,
-agent targets, plugin placements, graphics formats, filters, and events: these are data values used in
+agent targets, plugin placements, filters, and events: these are data values used in
 scripted/declarative composition, not scope-owning operations. Existing exclusive-selector refinements
 remain authoritative. No deprecated workspace input alias or alternate legacy creation parser remains.
 

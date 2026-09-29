@@ -136,7 +136,7 @@ export interface IHerdrSdk {
   readonly worktrees: IWorktreeService;
   /** Tab operations. */
   readonly tabs: ITabService;
-  /** Pane and graphics operations. */
+  /** Pane operations. */
   readonly panes: IPaneService;
   /** Declarative layout operations. */
   readonly layouts: ILayoutService;

@@ -536,57 +536,6 @@ export type HerdrInsertIndex = typeof HerdrInsertIndex.Type;
 export const parseHerdrInsertIndex = Schema.decodeUnknownEffect(HerdrInsertIndex);
 
 /**
- * Positive integer image dimension measured in pixels.
- *
- * @category schemas
- * @since 0.8.2
- */
-export const HerdrImageDimension = Schema.Finite.check(
-  Schema.isInt(),
-  Schema.isGreaterThan(0),
-).pipe(Schema.brand("HerdrImageDimension"));
-
-/**
- * Positive integer image dimension measured in pixels.
- *
- * @category models
- * @since 0.8.2
- */
-export type HerdrImageDimension = typeof HerdrImageDimension.Type;
-
-/**
- * Parses an external image dimension before graphics I/O.
- *
- * @category decoding
- * @since 0.8.2
- */
-export const parseHerdrImageDimension = Schema.decodeUnknownEffect(HerdrImageDimension);
-
-/**
- * Non-negative image payload size measured in bytes.
- *
- * @category schemas
- * @since 0.8.2
- */
-export const HerdrByteLength = HerdrNaturalNumber.pipe(Schema.brand("HerdrByteLength"));
-
-/**
- * Non-negative image payload size measured in bytes.
- *
- * @category models
- * @since 0.8.2
- */
-export type HerdrByteLength = typeof HerdrByteLength.Type;
-
-/**
- * Parses an external byte length before graphics I/O.
- *
- * @category decoding
- * @since 0.8.2
- */
-export const parseHerdrByteLength = Schema.decodeUnknownEffect(HerdrByteLength);
-
-/**
  * Popup size in terminal cells or an integer percentage from one through one hundred.
  *
  * @category schemas

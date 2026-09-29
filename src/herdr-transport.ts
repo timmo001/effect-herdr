@@ -20,7 +20,6 @@ import {
   Result,
   Schema,
   Scope,
-  Semaphore,
   Stream,
   Tracer,
 } from "effect";
@@ -114,6 +113,8 @@ export type HerdrTransportMethodError<Method extends WireMethod> =
   | HerdrTransportRequestError
   | (Method extends "events.wait" ? HerdrUnsupportedEvent : never);
 
+type HerdrStreamWireMethod = "events.subscribe";
+
 type HerdrOrdinaryWireMethod = Exclude<WireMethod, "events.wait">;
 
 /**
@@ -136,12 +137,10 @@ export interface HerdrTransportSuccess<Method extends WireMethod> {
  * @since 0.8.2
  */
 export interface HerdrTransportStream<
-  Method extends "events.subscribe" | "pane.graphics.stream",
+  Method extends HerdrStreamWireMethod,
 > extends HerdrTransportSuccess<Method> {
   /** Pulls ordered socket bytes with Node readable backpressure and scoped cleanup. */
   readonly readBytes: Stream.Stream<Uint8Array, HerdrTransportError>;
-  /** Writes bytes through the acquired stream resource. */
-  readonly write: (bytes: Uint8Array) => Effect.Effect<void, HerdrTransportError>;
 }
 
 /**
@@ -167,26 +166,12 @@ export interface IHerdrTransport {
       HerdrTransportRequestError | HerdrUnsupportedEvent
     >;
   };
-  /** Acquires a long-lived subscription or graphics socket in the current scope. */
-  readonly openStream: <Method extends "events.subscribe" | "pane.graphics.stream">(
+  /** Acquires a long-lived subscription socket in the current scope. */
+  readonly openStream: <Method extends HerdrStreamWireMethod>(
     method: Method,
     params: HerdrWireParameters<Method>,
     options?: HerdrTransportRequestOptionsEncoded,
   ) => Effect.Effect<HerdrTransportStream<Method>, HerdrTransportRequestError, Scope.Scope>;
-  /** Applies one deadline to a stream write and its optional acknowledgement; the caller owns acknowledgement failure cleanup. */
-  readonly writeStreamBytes: {
-    (
-      stream: HerdrTransportStream<"pane.graphics.stream">,
-      bytes: Uint8Array,
-      options?: HerdrTransportRequestOptionsEncoded,
-    ): Effect.Effect<void, HerdrInvalidInput | HerdrTransportError | HerdrRequestTimeout>;
-    <A, E, R>(
-      stream: HerdrTransportStream<"pane.graphics.stream">,
-      bytes: Uint8Array,
-      options: HerdrTransportRequestOptionsEncoded | undefined,
-      acknowledgement: Effect.Effect<A, E, R>,
-    ): Effect.Effect<A, HerdrInvalidInput | HerdrTransportError | HerdrRequestTimeout | E, R>;
-  };
 }
 
 /**
@@ -409,12 +394,12 @@ export const makeHerdrTransport = Effect.gen(function* () {
     "herdr.compatibility.wait",
   );
 
-  const openStream = <Method extends "events.subscribe" | "pane.graphics.stream">(
+  const openStream = <Method extends HerdrStreamWireMethod>(
     method: Method,
     params: HerdrWireParameters<Method>,
     options: HerdrTransportRequestOptionsEncoded = {},
   ): Effect.Effect<HerdrTransportStream<Method>, HerdrTransportRequestError, Scope.Scope> => {
-    const operation = method === "events.subscribe" ? "event_subscription" : "graphics_stream";
+    const operation = "event_subscription";
 
     return Effect.fn("HerdrTransport.openStream")(function* () {
       const parsedOptions = yield* parseHerdrTransportRequestOptions(options).pipe(
@@ -473,15 +458,10 @@ export const makeHerdrTransport = Effect.gen(function* () {
             { attributes: { "herdr.method": method, "herdr.operation": operation } },
           );
           yield* Effect.annotateCurrentSpan("herdr.result_type", result.type);
-          const writeSemaphore = yield* Semaphore.make(1);
           return {
             requestId,
             result,
             readBytes: makeHerdrSocketByteStream(socket, handshake.remainder, operation, requestId),
-            write: (bytes: Uint8Array) =>
-              writeSemaphore
-                .withPermit(writeSocketPayload(socket, bytes, "graphics_write", requestId))
-                .pipe(Effect.onInterrupt(() => closeSocket(socket))),
           };
         }).pipe(Effect.onError(() => closeSocket(socket)));
       }).pipe(
@@ -565,53 +545,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
     }, Effect.onExit(annotateHerdrTransportExit))();
   }
 
-  function writeStreamBytes(
-    stream: HerdrTransportStream<"pane.graphics.stream">,
-    bytes: Uint8Array,
-    options?: HerdrTransportRequestOptionsEncoded,
-  ): Effect.Effect<void, HerdrInvalidInput | HerdrTransportError | HerdrRequestTimeout>;
-  function writeStreamBytes<A, E, R>(
-    stream: HerdrTransportStream<"pane.graphics.stream">,
-    bytes: Uint8Array,
-    options: HerdrTransportRequestOptionsEncoded | undefined,
-    acknowledgement: Effect.Effect<A, E, R>,
-  ): Effect.Effect<A, HerdrInvalidInput | HerdrTransportError | HerdrRequestTimeout | E, R>;
-  function writeStreamBytes<A, E, R>(
-    stream: HerdrTransportStream<"pane.graphics.stream">,
-    bytes: Uint8Array,
-    options: HerdrTransportRequestOptionsEncoded = {},
-    acknowledgement?: Effect.Effect<A, E, R>,
-  ): Effect.Effect<void | A, HerdrInvalidInput | HerdrTransportError | HerdrRequestTimeout | E, R> {
-    return Effect.fn("HerdrTransport.writeStreamBytes")(function* () {
-      const parsedOptions = yield* parseHerdrTransportRequestOptions(options).pipe(
-        Effect.mapError((cause) => new HerdrInvalidInput("transport.requestOptions", cause)),
-      );
-      const deadline = Option.getOrElse(parsedOptions.requestTimeout, () => config.requestTimeout);
-      yield* Effect.annotateCurrentSpan({
-        "herdr.method": "pane.graphics.stream",
-        "herdr.operation": "graphics_write",
-        "herdr.deadline_ms": Duration.toMillis(deadline),
-      });
-      return yield* Effect.gen(function* () {
-        yield* stream.write(bytes);
-        if (acknowledgement !== undefined) return yield* acknowledgement;
-      }).pipe(
-        Effect.timeoutOrElse({
-          duration: deadline,
-          orElse: () =>
-            Effect.fail(
-              new HerdrRequestTimeout(
-                "graphics_write",
-                stream.requestId,
-                Duration.toMillis(deadline),
-              ),
-            ),
-        }),
-      );
-    })();
-  }
-
-  return HerdrTransport.of({ openStream, request, writeStreamBytes });
+  return HerdrTransport.of({ openStream, request });
 });
 
 /**

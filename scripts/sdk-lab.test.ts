@@ -67,7 +67,7 @@ test(
           .trim()
           .split("\n")
           .map((line) => line.split(":")[0]);
-        expect(ids).toHaveLength(4);
+        expect(ids).toHaveLength(3);
         expect(new Set(ids).size).toBe(ids.length);
         for (const id of ids) {
           expect(id).toBeDefined();
@@ -75,7 +75,7 @@ test(
           const result = yield* runLabCommand(["--scenario", id]);
           expect(result.status, result.output).toBe("pass");
           const output = stripVTControlCharacters(result.output);
-          expect(output).toContain("1 passed | 3 skipped");
+          expect(output).toContain("1 passed | 2 skipped");
           const report = /JSON report written to ([^\r\n]+)/.exec(output)?.[1];
           expect(report).toBeDefined();
           if (report === undefined) return yield* Effect.die("SDK lab test expected a report path");

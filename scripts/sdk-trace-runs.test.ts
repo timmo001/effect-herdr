@@ -128,7 +128,7 @@ test(
             "src/herdr-learning.test.ts",
             "--trace",
             "--testNamePattern",
-            "^sdk learning: graphics-writer$",
+            "^sdk learning: scoped-subscription$",
           ],
           {
             cwd: repositoryDirectory,
@@ -144,7 +144,7 @@ test(
           },
         );
         expect(result.exitCode, result.output).toBe(0);
-        expect(stripVTControlCharacters(result.output)).toContain("1 passed | 3 skipped");
+        expect(stripVTControlCharacters(result.output)).toContain("1 passed | 2 skipped");
         expect(result.output).toContain("SDK trace exported");
         const spans = sdkTelemetryRecordedSpans(collector.requests);
         const roots = spans.filter((span) => span.name === "sdk.execution");

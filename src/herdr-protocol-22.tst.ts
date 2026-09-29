@@ -50,6 +50,4 @@ const dependent = sdk.clientShell.withConnection(connectionInput, () => dependen
 expectTypeOf(dependent).toEqualTypeOf<
   Effect.Effect<number, HerdrEndpointConnectError | HerdrInvalidInput, "application-dependency">
 >();
-const graphics = sdk.panes.graphics.withStream(pane, () => Effect.succeed(42));
-expectTypeOf<Effect.Services<typeof graphics>>().toEqualTypeOf<never>();
 expectTypeOf<keyof WorkspaceCreateOptionsEncoded>().toEqualTypeOf<"focus" | "label" | "env">();

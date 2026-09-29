@@ -1,14 +1,4 @@
-import {
-  Context,
-  Deferred,
-  Effect,
-  Fiber,
-  FileSystem,
-  Layer,
-  ManagedRuntime,
-  Stream,
-} from "effect";
-import { ChildProcess, ChildProcessSpawner } from "effect/process";
+import { Context, Effect, FileSystem, Layer, ManagedRuntime } from "effect";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, type TestContext } from "vite-plus/test";
@@ -556,79 +546,6 @@ describe("executable examples", () => {
             });
           }),
         ),
-      ),
-  );
-
-  it.for(["SIGINT", "SIGTERM"] as const)(
-    "clears the graphics layer before exiting on %s",
-    { timeout: 10_000 },
-    (signal, context) =>
-      runToolingTest(
-        context,
-        Effect.scoped(
-          Effect.gen(function* () {
-            const fixture = yield* SdkToolingFixture;
-            const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-            const frameSent = yield* Deferred.make<void>();
-            const server = yield* startHerdrTestServer((request) =>
-              Effect.gen(function* () {
-                const response = makeHerdrSuccessResponse(request);
-                if (response.result.type === "pane_graphics_info") {
-                  return {
-                    ...response,
-                    result: {
-                      ...response.result,
-                      pane_visible: true,
-                      cell_width_px: 8,
-                      cell_height_px: 16,
-                    },
-                  };
-                }
-                if (request.method === "pane.graphics.set")
-                  yield* Deferred.succeed(frameSent, undefined);
-                return response;
-              }),
-            );
-            const child = yield* spawner.spawn(
-              ChildProcess.make(
-                process.execPath,
-                ["compiled/examples/graphics-status-overlay.js"],
-                {
-                  cwd: fixture.packageDirectory,
-                  env: { HERDR_SOCKET_PATH: server.socketPath },
-                  extendEnv: true,
-                  forceKillAfter: "5 seconds",
-                },
-              ),
-            );
-            const stderr = yield* Stream.mkString(Stream.decodeText(child.stderr)).pipe(
-              Effect.forkScoped,
-            );
-            yield* Stream.runDrain(child.stdout).pipe(Effect.forkScoped);
-            const exited = yield* child.exitCode.pipe(Effect.forkScoped);
-            yield* Effect.raceFirst(
-              Deferred.await(frameSent),
-              Effect.gen(function* () {
-                const status = yield* Fiber.join(exited);
-                const output = yield* Fiber.join(stderr);
-                return yield* Effect.die(
-                  new Error(
-                    `Graphics example exited before sending its frame: ${status} ${output}`,
-                  ),
-                );
-              }),
-            );
-            yield* child.kill({ killSignal: signal, forceKillAfter: "5 seconds" });
-            const status = yield* Fiber.join(exited);
-            const output = yield* Fiber.join(stderr);
-            expect(status, output).toBe(130);
-            expect(
-              server.requests
-                .filter((request) => request.method === "pane.graphics.clear")
-                .map((request) => request.params),
-            ).toEqual([{ pane_id: "fixture", layer_id: "build-status" }]);
-          }),
-        ).pipe(Effect.timeout("8 seconds")),
       ),
   );
 });

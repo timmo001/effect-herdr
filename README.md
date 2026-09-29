@@ -7,7 +7,7 @@
 Effect-native TypeScript access to Herdr's local Unix-socket API.
 
 The SDK exposes every Herdr operation as a typed `Effect`, decodes public inputs and wire responses
-with Effect Schema, represents live events as `Stream`, and owns graphics-stream cleanup with
+with Effect Schema, represents live events as `Stream`, and owns long-lived socket cleanup with
 `Scope`. The root `HerdrSdk` service keeps the convenient namespace-oriented API while preserving
 precise errors, dependencies, and interruption.
 
@@ -31,7 +31,7 @@ const summary = await Effect.runPromise(program.pipe(Effect.provide(herdrSdkLaye
 ## Status and compatibility
 
 - SDK version: `0.9.0` (unreleased baseline)
-- Minimum Herdr release: `0.9.0`; supported wire protocol: **22 only**
+- Minimum Herdr release: `0.9.2`; supported wire protocol: **22 only**
 - Effect: `4.0.0-rc.118`
 - Runtime: Node.js 20 or newer on a platform supported by Herdr's local socket server
 
@@ -193,8 +193,8 @@ Every namespace module follows the same public construction convention:
 The root equivalents are `IHerdrSdk`, `HerdrSdk`, `makeHerdrSdk`,
 `herdrSdkLayerWithoutDependencies`, `herdrSdkLayer`, and `herdrSdkLayerFromOptions`.
 
-Nested capability contracts are exported as `IClientWindowTitle`, `IPaneGraphics`,
-`PaneGraphicsWriter`, `IAgentView`, `IPluginActions`, `IPluginLogs`, and `IPluginPanes`. The pure
+Nested capability contracts are exported as `IClientWindowTitle`, `IAgentView`,
+`IPluginActions`, `IPluginLogs`, and `IPluginPanes`. The pure
 identifier-constructor contract is `IHerdrIds`.
 
 ### Service construction export index
@@ -364,43 +364,6 @@ const describeTask = Effect.gen(function* () {
   at most 16 entries, with names matching `^[A-Za-z0-9_-]{1,32}$`.
 - Use `reportAgent` for lifecycle state consumed by waits and notifications. Custom tokens such
   as `$model` need corresponding sidebar configuration to appear there.
-
-### `panes.graphics`
-
-| Operation                                       | Result and behavior                                                                                      |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `info(paneId, options?)`                        | Returns cell dimensions, visibility, formats, direct-file transport, layer limits, and mouse capability. |
-| `set(paneId, frame, options?)`                  | Replaces one graphics layer with an inline PNG, RGB, RGBA, or BGRA frame.                                |
-| `clear(paneId, options?)`                       | Clears every graphics layer for the pane.                                                                |
-| `clearLayer(paneId, input?, options?)`          | Clears one named layer or the primary layer.                                                             |
-| `withStream(paneId, use, options?)`             | Owns a graphics writer for the callback, closing on every exit path.                                     |
-| `withLayerStream(paneId, input, use, options?)` | Owns a named-layer writer for the callback.                                                              |
-| `openStream(paneId, options?)`                  | Advanced scope-owned acquisition for resource composition.                                               |
-| `openLayerStream(paneId, input?, options?)`     | Acquires a writer for one stable layer and z-index.                                                      |
-
-`PaneGraphicsWriter.write` sends inline frames. `writeFile` submits immutable direct-file RGBA or
-BGRA frames and returns `PaneGraphicsFrameAcknowledgement`. Writers have no manual `close`; their
-socket belongs to the acquisition scope.
-
-```ts
-const draw = Effect.gen(function* () {
-  const herdr = yield* HerdrSdk;
-  const pane = yield* herdr.panes.current();
-  yield* herdr.panes.graphics.withLayerStream(
-    pane.id,
-    { layerId: "status", zIndex: 10 },
-    (writer) =>
-      writer.write({
-        format: "rgba",
-        imageWidth: 1,
-        imageHeight: 1,
-        data: Uint8Array.of(34, 197, 94, 255),
-      }),
-  );
-});
-```
-
-One-shot inline writes are limited to 512 KiB; streamed inline frames are limited to 16 MiB.
 
 ### `layouts`
 
@@ -593,8 +556,7 @@ For untrusted input, prefer the Effect parsers: `parseWorkspaceId`, `parseTabId`
 `parseHerdrAbsolutePath`, `parseHerdrSessionName`, `parseHerdrMilliseconds`,
 `parseHerdrUnixMilliseconds`, `parseHerdrUnixSeconds`, `parseHerdrRevision`,
 `parseHerdrStateChangeSequence`, `parseHerdrSplitRatio`, `parseHerdrMetadataTtl`,
-`parseHerdrInsertIndex`, `parseHerdrImageDimension`, `parseHerdrByteLength`, and
-`parseHerdrPopupSize`.
+`parseHerdrInsertIndex`, and `parseHerdrPopupSize`.
 
 ## Schema and model catalog
 
@@ -610,8 +572,7 @@ Protocol-22 interaction models are exported from `herdr-pane-interaction-models.
 `WorkspaceId`, `TabId`, `PaneId`, `TerminalId`, `PluginId`, `PluginActionId`, `PluginLogId`,
 `AgentName`, `HerdrAbsolutePath`, `HerdrSessionName`, `HerdrMilliseconds`,
 `HerdrUnixMilliseconds`, `HerdrUnixSeconds`, `HerdrRevision`, `HerdrStateChangeSequence`,
-`HerdrSplitRatio`, `HerdrMetadataTtl`, `HerdrInsertIndex`, `HerdrImageDimension`,
-`HerdrByteLength`, and `HerdrPopupSize`.
+`HerdrSplitRatio`, `HerdrMetadataTtl`, `HerdrInsertIndex`, and `HerdrPopupSize`.
 
 ### Server, client, and resource models
 
@@ -623,7 +584,8 @@ Protocol-22 interaction models are exported from `herdr-pane-interaction-models.
 ### Workspace, server, notification, integration, worktree, and tab operations
 
 `WorkspaceCreateOptions`, `WorkspaceCreateResult`, `WorkspaceMetadataReportInput`,
-`WorkspaceMoveInput`, `WorkspaceMoveBlockInput`, `ServerLiveHandoffInput`, `NotificationShowInput`,
+`WorkspaceMoveInput`, `WorkspaceMoveBlockInput`, `ServerLiveHandoffInput`,
+`NotificationShowInput`,
 `IntegrationTarget`, `IntegrationChangeResult`, `WorktreeSourceInfo`, `Worktree`,
 `WorktreeListResult`, `WorktreeCreateResult`, `WorktreeOpenResult`, `WorktreeRemoveResult`,
 `WorktreeListInput`, `WorktreeCreateInput`, `WorktreeOpenInput`, `WorktreeRemoveInput`,
@@ -641,12 +603,9 @@ Protocol-22 interaction models are exported from `herdr-pane-interaction-models.
 `PaneAgentSessionReportInput`, `PaneMetadataReportInput`, `PaneClearAgentAuthorityInput`, and
 `PaneReleaseAgentInput`.
 
-### Graphics and layouts
+### Layouts
 
-`PaneGraphicsFileFormat`, `PaneGraphicsInfo`, `PaneGraphicsPlacement`, `PaneGraphicsFormat`,
-`PaneGraphicsFrame`, `PaneGraphicsSetFrame`, `PaneGraphicsLayerInput`, `PaneGraphicsStreamInput`,
-`PaneGraphicsFileFrame`, `PaneGraphicsFrameAcknowledgement`, `LayoutNode`, `LayoutTarget`,
-`LayoutApplyInput`, `LayoutSetSplitRatioInput`, and `LayoutDescription`.
+`LayoutNode`, `LayoutTarget`, `LayoutApplyInput`, `LayoutSetSplitRatioInput`, and `LayoutDescription`.
 
 ### Agents and events
 
@@ -680,8 +639,7 @@ Encoded interfaces describe the exact caller representation accepted before sche
 `PaneWaitForOutputInputEncoded`, `PaneAgentReportInputEncoded`,
 `PaneAgentSessionReportInputEncoded`, `PaneMetadataReportInputEncoded`,
 `PaneClearAgentAuthorityInputEncoded`, `PaneReleaseAgentInputEncoded`,
-`PaneGraphicsFrameEncoded`, `PaneGraphicsSetFrameEncoded`, `PaneGraphicsLayerInputEncoded`,
-`PaneGraphicsStreamInputEncoded`, `PaneGraphicsFileFrameEncoded`, `LayoutTargetEncoded`,
+`LayoutTargetEncoded`,
 `LayoutApplyInputEncoded`, `LayoutSetSplitRatioInputEncoded`, `AgentTargetEncoded`,
 `AgentStartInputEncoded`, `AgentWaitInputEncoded`, `AgentPromptInputEncoded`,
 `AgentViewSetInputEncoded`, `AgentViewClearInputEncoded`, `EventSubscriptionSpecEncoded`,
@@ -694,25 +652,22 @@ Encoded interfaces describe the exact caller representation accepted before sche
 Expected failures remain values in the Effect error channel and are recoverable with
 `Effect.catchTag` or `Effect.catchTags`.
 
-| Error                       | Meaning                                                                       |
-| --------------------------- | ----------------------------------------------------------------------------- |
-| `HerdrConfigurationError`   | Explicit or ambient configuration could not be decoded or resolved.           |
-| `HerdrInvalidInput`         | A public operation could not parse caller input.                              |
-| `HerdrTransportError`       | Unix-socket connect, read, write, or premature-close failure.                 |
-| `HerdrRequestTimeout`       | A local SDK deadline elapsed; the server outcome may be uncertain.            |
-| `HerdrInvalidResponse`      | Malformed, oversized, mismatched, missing, or schema-invalid server response. |
-| `HerdrUnsupportedProtocol`  | Server and SDK protocol versions differ.                                      |
-| `HerdrUnsupportedResult`    | An operation returned an unsupported success discriminant.                    |
-| `HerdrUnsupportedEvent`     | A stream or wait received an unsupported event discriminant.                  |
-| `HerdrServerError`          | The server rejected a request with an open-code error response.               |
-| `HerdrInvalidFrame`         | Graphics data or dimensions are invalid.                                      |
-| `HerdrImageTooLarge`        | A graphics payload exceeds its write-mode byte limit.                         |
-| `HerdrGraphicsStreamClosed` | A graphics writer was used after its owning scope closed.                     |
+| Error                      | Meaning                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `HerdrConfigurationError`  | Explicit or ambient configuration could not be decoded or resolved.           |
+| `HerdrInvalidInput`        | A public operation could not parse caller input.                              |
+| `HerdrTransportError`      | Unix-socket connect, read, write, or premature-close failure.                 |
+| `HerdrRequestTimeout`      | A local SDK deadline elapsed; the server outcome may be uncertain.            |
+| `HerdrInvalidResponse`     | Malformed, oversized, mismatched, missing, or schema-invalid server response. |
+| `HerdrUnsupportedProtocol` | Server and SDK protocol versions differ.                                      |
+| `HerdrUnsupportedResult`   | An operation returned an unsupported success discriminant.                    |
+| `HerdrUnsupportedEvent`    | A stream or wait received an unsupported event discriminant.                  |
+| `HerdrServerError`         | The server rejected a request with an open-code error response.               |
 
 `HerdrTransportRequestError` is the common request error union. `HerdrTransportMethodError<Method>`
 adds method-specific result failures. `EventOperationError` adds `HerdrUnsupportedEvent` for event
 operations; `ServerOperationError` and `WorkspaceOperationError` name their namespace request
-unions; graphics methods add their frame, size, or lifecycle errors.
+unions.
 
 ```ts
 const resilientPing = herdr.server
@@ -731,9 +686,7 @@ Endpoint failures are separate typed errors: `HerdrEndpointNegotiationError`, `H
 ## Advanced transport API
 
 `HerdrTransport` is public for infrastructure integrations that genuinely need raw protocol access.
-Its `request` method remains method-indexed, `openStream` is limited to `events.subscribe` and
-`pane.graphics.stream`, and `writeStreamBytes` preserves typed socket failures. Most applications
-should use namespace services instead.
+Its `request` method remains method-indexed, and `openStream` is limited to `events.subscribe`. Most applications should use namespace services instead.
 
 Transport exports are `HerdrTransport`, `HerdrTransportRequestOptions`,
 `HerdrTransportRequestOptionsEncoded`, `HerdrTransportRequestError`,
@@ -742,9 +695,9 @@ Transport exports are `HerdrTransport`, `HerdrTransportRequestOptions`,
 
 ## Examples
 
-The [`examples/`](examples/) directory contains eleven executable, type-checked programs. Start
-with the focused recipes, then explore the multi-agent idea lab, declarative command center,
-animated graphics beacon, and attention-sorted agent rescue view.
+The [`examples/`](examples/) directory contains nine executable, type-checked programs. Start
+with the focused recipes, then explore the multi-agent idea lab, declarative command center, and
+attention-sorted agent rescue view.
 
 ```sh
 bun run example -- examples/session-inventory.ts

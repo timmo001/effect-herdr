@@ -17,7 +17,6 @@ then follow its imports and callers. Runtime tests exercise isolated local fixtu
 | Wire parameters, opaque records, recursive inputs    | [encoder](../src/herdr-wire-encoder.ts), [schema](../schema/herdr-api.schema.json)                                               | [encoder runtime](../src/herdr-wire-encoder.test.ts), [encoder inference](../src/herdr-wire-encoder.tst.ts)                         |
 | Correlation, framing, compatibility, cleanup         | [transport](../src/herdr-transport.ts), [socket lines](../src/herdr-socket-lines.ts), [wire parser](../src/herdr-wire-parser.ts) | [transport tests](../src/herdr-transport.test.ts)                                                                                   |
 | Live event acceptance, narrowing, bootstrap          | [event service](../src/event-service.ts)                                                                                         | [event tests](../src/event-service.test.ts), [SDK inference](../src/herdr-sdk.tst.ts)                                               |
-| Graphics writes, acknowledgements, scope             | [pane service](../src/pane-service.ts), [transport](../src/herdr-transport.ts)                                                   | [graphics tests](../src/pane-graphics.test.ts)                                                                                      |
 | Namespace dispatch / result variants                 | Service owner in [parity ledger](sdk-v1-parity.md)                                                                               | [dispatch tests](../src/herdr-full-parity.test.ts), plus the ledger's focused suite                                                 |
 | Typed failures / safe diagnostics                    | [errors](../src/herdr-errors.ts), [error policy](errors.md)                                                                      | [error tests](../src/herdr-errors.test.ts), owning boundary suite                                                                   |
 | Fixture synchronization / bounded metadata timelines | [test server](../src/herdr-test-server.ts), [wire fixtures](../src/herdr-wire-fixtures.ts)                                       | [fixture tests](../src/herdr-test-server.test.ts), plus consumers of the changed behavior                                           |
@@ -48,7 +47,7 @@ Other useful routes (commands run from the repository root):
 - Composition: `./node_modules/.bin/vitest run src/herdr-sdk.test.ts`; inspect the adjacent
   `.tst.ts` files for requirements and inference, which runtime Vitest does not check.
 - Boundary parsing to wire encoding: `./node_modules/.bin/vitest run src/herdr-input-boundaries.test.ts src/herdr-wire-encoder.test.ts`.
-- Resource lifetimes: `./node_modules/.bin/vitest run src/event-service.test.ts src/pane-graphics.test.ts`.
+- Resource lifetimes: `./node_modules/.bin/vitest run src/event-service.test.ts src/herdr-transport.test.ts`.
 - Exact upstream Effect behavior: find the installed version in the package manifest, then inspect
   the Effect [OpenCode reference](../opencode.json) and its agent guidance; never import or edit it.
   Branch references may be newer. Confirm exports/signatures against the installed package.

@@ -12,12 +12,9 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
     context,
     Effect.scoped(
       Effect.gen(function* () {
-        const server = yield* startHerdrTestServer((request, socket) =>
+        const server = yield* startHerdrTestServer((request) =>
           Effect.sync(() => {
             const response = makeHerdrSuccessResponse(request);
-            if (request.method === "pane.graphics.stream") {
-              socket.removeAllListeners("data");
-            }
             if (request.method === "events.subscribe") {
               const eventResponse = makeHerdrSuccessResponse({
                 id: request.id,
@@ -167,31 +164,6 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
             agent: "codex",
           });
           yield* herdr.panes.close(paneId);
-          yield* herdr.panes.graphics.info(paneId);
-          yield* herdr.panes.graphics.set(paneId, {
-            format: "png",
-            imageWidth: 1,
-            imageHeight: 1,
-            data: Uint8Array.of(1),
-            layerId: "overlay",
-            zIndex: 2,
-          });
-          yield* herdr.panes.graphics.clear(paneId);
-          yield* herdr.panes.graphics.clearLayer(paneId, { layerId: "overlay" });
-          yield* Effect.scoped(
-            Effect.gen(function* () {
-              const writer = yield* herdr.panes.graphics.openLayerStream(paneId, {
-                layerId: "overlay",
-                zIndex: 2,
-              });
-              yield* writer.write({
-                format: "png",
-                imageWidth: 1,
-                imageHeight: 1,
-                data: Uint8Array.of(1),
-              });
-            }),
-          );
 
           yield* herdr.layouts.export({ tabId });
           yield* herdr.layouts.apply({
@@ -282,12 +254,6 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
         ).toMatchObject({
           params: { pane_id: "pane-1", right_click: "herdr" },
         });
-        expect(
-          server.requests.find(
-            (request) =>
-              request.method === "pane.graphics.stream" && request.params.layer_id === "overlay",
-          ),
-        ).toMatchObject({ params: { z_index: 2 } });
         yield* server.waitFor("close", server.requests.length);
         expect(server.openSocketMethods()).toEqual([]);
       }),
