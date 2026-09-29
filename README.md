@@ -230,14 +230,20 @@ constructed through `herdr.ids` or returned by another SDK operation.
 
 ### `server`
 
-| Operation                        | Result and behavior                                            |
-| -------------------------------- | -------------------------------------------------------------- |
-| `ping(options?)`                 | Returns `PingResult` and verifies protocol compatibility.      |
-| `stop(options?)`                 | Requests a graceful server stop.                               |
-| `liveHandoff(input?, options?)`  | Hands the running server to a compatible executable.           |
-| `reloadConfig(options?)`         | Reloads server configuration and returns `ConfigReloadResult`. |
-| `getAgentManifests(options?)`    | Returns current `AgentManifestStatus`.                         |
-| `reloadAgentManifests(options?)` | Refreshes and returns all `AgentManifest` values.              |
+| Operation                           | Result and behavior                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `ping(options?)`                    | Returns `PingResult` and verifies protocol compatibility.                |
+| `stop(options?)`                    | Requests a graceful server stop.                                         |
+| `liveHandoff(input?, options?)`     | Hands the running server to a compatible executable.                     |
+| `reloadConfig(options?)`            | Reloads server configuration and returns `ConfigReloadResult`.           |
+| `getAgentManifests(options?)`       | Returns current `AgentManifestStatus`.                                   |
+| `reloadAgentManifests(options?)`    | Refreshes and returns all `AgentManifest` values.                        |
+| `registerSshAgent(input, options?)` | Registers a remote-host SSH agent socket until the current scope closes. |
+
+`registerSshAgent` holds its API connection open for the lifetime of the caller's `Scope`; closing
+the scope ends the registration. The returned `ServerSshAgentLease.closed` completes if the server
+ends it first. Only Unix servers support it: check `capabilities.sshAgentRegistration` from
+`ping()` before registering.
 
 ### `session`
 
@@ -320,6 +326,7 @@ caller-supplied directory.
 | `selection.read(paneId, input, options?)`        | Reads absolute-coordinate text with an optional content revision guard.                                   |
 | `copyMotion(paneId, input, options?)`            | Computes a cursor position and content revision without typing input.                                     |
 | `copySearch(paneId, input, options?)`            | Searches an exact content revision; query limit is 4096 UTF-8 bytes, match window is at most 1024 ranges. |
+| `link.resolve(paneId, input, options?)`          | Returns the viewport regions of the link under a cell without invoking any handler.                       |
 | `link.activate(paneId, input, options?)`         | Resolves a visible link and invokes a matching plugin; does not open a browser.                           |
 | `list(input?, options?)`                         | Lists panes, optionally within a workspace.                                                               |
 | `current(input?, options?)`                      | Resolves the caller or foreground pane.                                                                   |
@@ -337,6 +344,7 @@ caller-supplied directory.
 | `reportMetadata(id, input, options?)`            | Replaces or removes source-owned pane metadata.                                                           |
 | `clearAgentAuthority(id, input?, options?)`      | Clears agent-report authority, optionally by version.                                                     |
 | `releaseAgent(id, input, options?)`              | Releases one source-owned agent report.                                                                   |
+| `clear(id, options?)`                            | Clears the pane's terminal screen.                                                                        |
 | `close(id, options?)`                            | Closes one pane.                                                                                          |
 
 Selection/copy/link operations preserve `stale_content` and do not retry coordinates against new text. Copy search's `total` can exceed `matches.length`. Content revisions are distinct from endpoint projection and surface revisions.
@@ -585,7 +593,7 @@ Protocol-22 interaction models are exported from `herdr-pane-interaction-models.
 
 `WorkspaceCreateOptions`, `WorkspaceCreateResult`, `WorkspaceMetadataReportInput`,
 `WorkspaceMoveInput`, `WorkspaceMoveBlockInput`, `ServerLiveHandoffInput`,
-`NotificationShowInput`,
+`ServerSshAgentRegisterInput`, `NotificationShowInput`,
 `IntegrationTarget`, `IntegrationChangeResult`, `WorktreeSourceInfo`, `Worktree`,
 `WorktreeListResult`, `WorktreeCreateResult`, `WorktreeOpenResult`, `WorktreeRemoveResult`,
 `WorktreeListInput`, `WorktreeCreateInput`, `WorktreeOpenInput`, `WorktreeRemoveInput`,
@@ -630,6 +638,7 @@ Encoded interfaces describe the exact caller representation accepted before sche
 
 `WorkspaceCreateOptionsEncoded`, `WorkspaceMetadataReportInputEncoded`,
 `WorkspaceMoveInputEncoded`, `WorkspaceMoveBlockInputEncoded`, `ServerLiveHandoffInputEncoded`,
+`ServerSshAgentRegisterInputEncoded`,
 `NotificationShowInputEncoded`, `WorktreeListInputEncoded`, `WorktreeCreateInputEncoded`,
 `WorktreeOpenInputEncoded`, `WorktreeRemoveInputEncoded`, `TabCreateInputEncoded`,
 `TabListInputEncoded`, `TabMoveInputEncoded`, `PaneInputRoutingInputEncoded`,
@@ -652,17 +661,17 @@ Encoded interfaces describe the exact caller representation accepted before sche
 Expected failures remain values in the Effect error channel and are recoverable with
 `Effect.catchTag` or `Effect.catchTags`.
 
-| Error                      | Meaning                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| `HerdrConfigurationError`  | Explicit or ambient configuration could not be decoded or resolved.           |
-| `HerdrInvalidInput`        | A public operation could not parse caller input.                              |
-| `HerdrTransportError`      | Unix-socket connect, read, write, or premature-close failure.                 |
-| `HerdrRequestTimeout`      | A local SDK deadline elapsed; the server outcome may be uncertain.            |
-| `HerdrInvalidResponse`     | Malformed, oversized, mismatched, missing, or schema-invalid server response. |
-| `HerdrUnsupportedProtocol` | Server and SDK protocol versions differ.                                      |
-| `HerdrUnsupportedResult`   | An operation returned an unsupported success discriminant.                    |
-| `HerdrUnsupportedEvent`    | A stream or wait received an unsupported event discriminant.                  |
-| `HerdrServerError`         | The server rejected a request with an open-code error response.               |
+| Error                      | Meaning                                                                                                  |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `HerdrConfigurationError`  | Explicit or ambient configuration could not be decoded or resolved.                                      |
+| `HerdrInvalidInput`        | A public operation could not parse caller input.                                                         |
+| `HerdrTransportError`      | Unix-socket connect, read, write, or premature-close failure.                                            |
+| `HerdrRequestTimeout`      | A local SDK deadline elapsed; the server outcome may be uncertain.                                       |
+| `HerdrInvalidResponse`     | Malformed, oversized, mismatched, missing, or schema-invalid server response.                            |
+| `HerdrUnsupportedProtocol` | Server and SDK protocol versions differ.                                                                 |
+| `HerdrUnsupportedResult`   | An operation returned an unsupported success discriminant.                                               |
+| `HerdrUnsupportedEvent`    | A stream or wait received an unsupported event discriminant.                                             |
+| `HerdrServerError`         | The server rejected a request, or ended a subscription (such as `events_lost`), with an open-code error. |
 
 `HerdrTransportRequestError` is the common request error union. `HerdrTransportMethodError<Method>`
 adds method-specific result failures. `EventOperationError` adds `HerdrUnsupportedEvent` for event
@@ -686,7 +695,8 @@ Endpoint failures are separate typed errors: `HerdrEndpointNegotiationError`, `H
 ## Advanced transport API
 
 `HerdrTransport` is public for infrastructure integrations that genuinely need raw protocol access.
-Its `request` method remains method-indexed, and `openStream` is limited to `events.subscribe`. Most applications should use namespace services instead.
+Its `request` method remains method-indexed, and `openStream` is limited to `events.subscribe` and
+`server.ssh_agent.register`. Most applications should use namespace services instead.
 
 Transport exports are `HerdrTransport`, `HerdrTransportRequestOptions`,
 `HerdrTransportRequestOptionsEncoded`, `HerdrTransportRequestError`,

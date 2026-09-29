@@ -38,7 +38,7 @@ workspaces as an agent.
 2. Preserve boundary semantics:
    - Keep typed failures such as `HerdrUnsupportedProtocol` visible; install
      matching Herdr and SDK releases rather than bypassing the check.
-   - Keep event streams within their owning scope.
+   - Keep event streams and SSH agent leases within their owning scope.
    - A prompt timeout can follow delivery; inspect state before retrying.
 3. For coordination, use the agent prompt/wait operations for one-shot work and
    event streams for long-lived observation. Do not build polling loops or a

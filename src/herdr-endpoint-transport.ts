@@ -77,8 +77,11 @@ export type EndpointRequestError =
   | HerdrEndpointUnsupportedMethod
   | HerdrServerError
   | HerdrUnsupportedResult;
-/** Connection-local request methods; socket subscriptions use their own transport. @category models @since 0.9.0 */
-export type EndpointRequestMethod = Exclude<WireMethod, "events.subscribe">;
+/** Connection-local request methods; socket subscriptions and SSH agent leases use their own transport. @category models @since 0.9.0 */
+export type EndpointRequestMethod = Exclude<
+  WireMethod,
+  "events.subscribe" | "server.ssh_agent.register"
+>;
 /** Internal protocol connection; only ClientShellService exposes domain operations. @category services @since 0.9.0 */
 export interface EndpointWireConnection {
   /** Negotiated endpoint version and advertised capability names. */

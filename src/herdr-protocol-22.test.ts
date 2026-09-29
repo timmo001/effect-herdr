@@ -324,3 +324,50 @@ test.for([
     ),
   ),
 );
+
+test("Herdr 0.9.2 pane additions encode their wire fields and decode link regions", (context) =>
+  runHerdrTest(
+    context,
+    Effect.scoped(
+      Effect.gen(function* () {
+        const server = yield* startHerdrTestServer((request) =>
+          Effect.succeed(
+            request.method === "pane.link.resolve"
+              ? {
+                  id: request.id,
+                  result: {
+                    type: "pane_link_resolved",
+                    regions: [{ row: 2, start_col: 4, end_col: 9 }],
+                  },
+                }
+              : makeHerdrSuccessResponse(request),
+          ),
+        );
+        yield* Effect.gen(function* () {
+          const sdk = yield* HerdrSdk;
+          const pane = sdk.ids.pane("pane");
+          const link = yield* sdk.panes.link.resolve(pane, { viewportRow: 2, col: 5 });
+          expect(link.regions).toEqual([{ row: 2, startCol: 4, endCol: 9 }]);
+          yield* sdk.panes.clear(pane);
+          const report = { source: "fixture", agent: "pi", state: "idle" } as const;
+          yield* sdk.panes.reportAgent(pane, report);
+          yield* sdk.panes.reportAgent(pane, { ...report, resumeArgv: ["pi", "--resume"] });
+        }).pipe(
+          Effect.provide(
+            herdrSdkLayerFromOptions({ socketPath: HerdrAbsolutePath.make(server.socketPath) }),
+          ),
+        );
+        const requests = server.requests.filter((request) => request.method !== "ping");
+        expect(requests.map((request) => request.method)).toEqual([
+          "pane.link.resolve",
+          "pane.clear",
+          "pane.report_agent",
+          "pane.report_agent",
+        ]);
+        expect(requests[0]?.params).toEqual({ pane_id: "pane", viewport_row: 2, col: 5 });
+        expect(requests[1]?.params).toEqual({ pane_id: "pane" });
+        expect(requests[2]?.params).not.toHaveProperty("resume_argv");
+        expect(requests[3]?.params).toMatchObject({ resume_argv: ["pi", "--resume"] });
+      }),
+    ),
+  ));

@@ -22,6 +22,7 @@ focused failure/cleanup tests and repeated synchronized scenarios, separately fr
 | `server.reload_config`          | `server.reloadConfig`             | `ServerService`       | `src/server-service.ts`       | `src/herdr-full-parity.test.ts` | covered |
 | `server.agent_manifests`        | `server.getAgentManifests`        | `ServerService`       | `src/server-service.ts`       | `src/herdr-full-parity.test.ts` | covered |
 | `server.reload_agent_manifests` | `server.reloadAgentManifests`     | `ServerService`       | `src/server-service.ts`       | `src/herdr-full-parity.test.ts` | covered |
+| `server.ssh_agent.register`     | `server.registerSshAgent`         | `ServerService`       | `src/server-service.ts`       | `src/herdr-learning.test.ts`    | covered |
 | `session.snapshot`              | `session.snapshot`                | `SessionService`      | `src/session-service.ts`      | `src/herdr-full-parity.test.ts` | covered |
 | `notification.show`             | `notifications.show`              | `NotificationService` | `src/notification-service.ts` | `src/herdr-full-parity.test.ts` | covered |
 | `client.window_title.set`       | `client.windowTitle.set`          | `ClientService`       | `src/client-service.ts`       | `src/herdr-full-parity.test.ts` | covered |
@@ -72,6 +73,7 @@ focused failure/cleanup tests and repeated synchronized scenarios, separately fr
 | `pane.report_metadata`          | `panes.reportMetadata`            | `PaneService`         | `src/pane-service.ts`         | `src/herdr-full-parity.test.ts` | covered |
 | `pane.clear_agent_authority`    | `panes.clearAgentAuthority`       | `PaneService`         | `src/pane-service.ts`         | `src/herdr-full-parity.test.ts` | covered |
 | `pane.release_agent`            | `panes.releaseAgent`              | `PaneService`         | `src/pane-service.ts`         | `src/herdr-full-parity.test.ts` | covered |
+| `pane.clear`                    | `panes.clear`                     | `PaneService`         | `src/pane-service.ts`         | `src/herdr-protocol-22.test.ts` | covered |
 | `pane.close`                    | `panes.close`                     | `PaneService`         | `src/pane-service.ts`         | `src/herdr-full-parity.test.ts` | covered |
 | `layout.export`                 | `layouts.export`                  | `LayoutService`       | `src/layout-service.ts`       | `src/herdr-full-parity.test.ts` | covered |
 | `layout.apply`                  | `layouts.apply`                   | `LayoutService`       | `src/layout-service.ts`       | `src/herdr-full-parity.test.ts` | covered |
@@ -115,6 +117,7 @@ focused failure/cleanup tests and repeated synchronized scenarios, separately fr
 | `pane.selection.read`          | `panes.selection.read`                                                   | `PaneService`                | `src/pane-interaction.ts`             | `src/herdr-protocol-22.test.ts`    | covered |
 | `pane.copy_motion`             | `panes.copyMotion`                                                       | `PaneService`                | `src/pane-interaction.ts`             | `src/herdr-protocol-22.test.ts`    | covered |
 | `pane.copy_search`             | `panes.copySearch`                                                       | `PaneService`                | `src/pane-interaction.ts`             | `src/herdr-protocol-22.test.ts`    | covered |
+| `pane.link.resolve`            | `panes.link.resolve`                                                     | `PaneService`                | `src/pane-interaction.ts`             | `src/herdr-protocol-22.test.ts`    | covered |
 | `pane.link.activate`           | `panes.link.activate`                                                    | `PaneService`                | `src/pane-interaction.ts`             | `src/herdr-protocol-22.test.ts`    | covered |
 | `command.invoke`               | `commands.invoke`, `.invokeInWorkspace`, `.invokeInTab`, `.invokeInPane` | `CommandService`             | `src/command-service.ts`              | `src/herdr-protocol-22.test.ts`    | covered |
 | `product_announcement.dismiss` | `productAnnouncements.dismiss`                                           | `ProductAnnouncementService` | `src/product-announcement-service.ts` | `src/herdr-protocol-22.test.ts`    | covered |
@@ -150,6 +153,8 @@ wire intents are exercised by `src/herdr-protocol-22.test.ts`.
 | Live-only subscription acceptance and snapshot-plus-buffer bootstrap                                | `src/event-service.ts`            | `src/event-service.test.ts`                                       | covered |
 | Coalesced stream-handshake/event bytes and unsupported subscription events                          | `src/event-service.ts`            | `src/event-service.test.ts`                                       | covered |
 | Cold event streams close sockets on completion, failure, and interruption                           | `src/herdr-transport.ts`          | `src/event-service.test.ts`                                       | covered |
+| Subscription-ending server errors such as `events_lost` fail as `HerdrServerError`                  | `src/event-service.ts`            | `src/event-service.test.ts`                                       | covered |
+| SSH agent lease holds its socket until the owning scope closes                                      | `src/server-service.ts`           | `src/herdr-learning.test.ts`                                      | covered |
 | Plugin pane placement/result overload correlation                                                   | `src/plugin-service.ts`           | `src/plugin-service.test.ts`                                      | covered |
 | Independent namespace Layer requirements                                                            | Service modules                   | `src/herdr-layers.tst.ts`                                         | covered |
 | One shared configuration and transport in the root production graph                                 | `src/herdr-sdk.ts`                | `src/herdr-sdk.test.ts`                                           | covered |

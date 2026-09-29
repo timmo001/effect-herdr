@@ -65,7 +65,12 @@ export class HerdrInvalidInput extends Schema.TaggedError<HerdrInvalidInput>()(
 export class HerdrTransportError extends Schema.TaggedError<HerdrTransportError>()(
   "HerdrTransportError",
   {
-    operation: Schema.Literals(["request", "compatibility_check", "event_subscription"]),
+    operation: Schema.Literals([
+      "request",
+      "compatibility_check",
+      "event_subscription",
+      "ssh_agent_registration",
+    ]),
     reason: Schema.Literals(["connect", "read", "write", "premature_close"]),
     requestId: Schema.String,
     message: Schema.String,
@@ -98,7 +103,12 @@ export class HerdrTransportError extends Schema.TaggedError<HerdrTransportError>
 export class HerdrRequestTimeout extends Schema.TaggedError<HerdrRequestTimeout>()(
   "HerdrRequestTimeout",
   {
-    operation: Schema.Literals(["request", "compatibility_check", "event_subscription"]),
+    operation: Schema.Literals([
+      "request",
+      "compatibility_check",
+      "event_subscription",
+      "ssh_agent_registration",
+    ]),
     requestId: Schema.String,
     timeoutMilliseconds: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
     message: Schema.String,

@@ -25,7 +25,7 @@ node scripts/sdk-trace-viewer.mjs --http 19418 --grpc 19417 --browser-port 19400
 In another terminal, run a fixture-only experiment or focused test:
 
 ```sh
-node scripts/sdk-lab.mjs --scenario scoped-subscription --trace
+node scripts/sdk-lab.mjs --scenario ssh-agent-lease --trace
 node scripts/sdk-verification-cli.mjs test run src/event-service.test.ts --trace
 node scripts/sdk-verify.mjs generated --trace
 ```

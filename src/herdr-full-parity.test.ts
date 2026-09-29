@@ -69,6 +69,7 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
             cursor: { row: 0, col: 0 },
             contentRevision: 0,
           });
+          yield* herdr.panes.link.resolve(paneId, { viewportRow: 0, col: 0 });
           yield* herdr.panes.link.activate(paneId, { viewportRow: 0, col: 0 });
           yield* herdr.workspaces.create();
           yield* herdr.workspaces.createFromWorkspace(workspaceId);
@@ -77,6 +78,7 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
           yield* herdr.server.reloadConfig();
           yield* herdr.server.getAgentManifests();
           yield* herdr.server.reloadAgentManifests();
+          yield* Effect.scoped(herdr.server.registerSshAgent({ socketPath: fixturePath }));
           yield* herdr.server.ping();
           yield* herdr.session.snapshot();
           yield* herdr.notifications.show({ title: "fixture" });
@@ -164,6 +166,7 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
             agent: "codex",
           });
           yield* herdr.panes.close(paneId);
+          yield* herdr.panes.clear(paneId);
 
           yield* herdr.layouts.export({ tabId });
           yield* herdr.layouts.apply({

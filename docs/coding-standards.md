@@ -127,7 +127,7 @@ intentional meaning, as in schema-boundary classification. Preserve interruption
 transport failure, timeout, malformed response, unsupported protocol/result/event, and server
 rejection. Read [error guidance](errors.md) when changing failures, while using Herdr SDK vocabulary and socket outcomes rather than HTTP or Overseer examples.
 
-Own sockets, event subscriptions, temporary directories, and child processes with
+Own sockets, event subscriptions, SSH agent leases, temporary directories, and child processes with
 `Scope` and acquisition/finalization. Ordinary requests use scoped acquisition around one socket.
 Adapt unavoidable Node callbacks once at the edge; keep inner workflows Effect-native.
 

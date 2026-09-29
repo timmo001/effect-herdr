@@ -5,6 +5,7 @@ import { runHerdrTest } from "./herdr-test-runtime.ts";
 import { HerdrAbsolutePath } from "./herdr-domain.ts";
 import {
   HerdrInvalidResponse,
+  HerdrServerError,
   HerdrTransportError,
   HerdrUnsupportedEvent,
 } from "./herdr-errors.ts";
@@ -266,6 +267,42 @@ test("event subscriptions preserve an unknown server discriminant as a typed fai
         );
         expect(failure).toBeInstanceOf(HerdrUnsupportedEvent);
         expect(failure).toMatchObject({ eventType: "pane.future_state" });
+      }),
+    ),
+  ));
+
+test("a server error line ending a subscription is a typed server failure", (context) =>
+  runHerdrTest(
+    context,
+    Effect.scoped(
+      Effect.gen(function* () {
+        const server = yield* startHerdrTestServer((request) =>
+          Effect.sync(() => {
+            const response = makeHerdrSuccessResponse(request);
+            if (request.method !== "events.subscribe") return response;
+            return new HerdrRawTestResponse(
+              `${JSON.stringify(response)}\n${JSON.stringify({
+                id: request.id,
+                error: { code: "events_lost", message: "subscriber fell behind" },
+              })}\n`,
+            );
+          }),
+        );
+
+        const failure = yield* provideHerdrTestSdk(
+          server.socketPath,
+          Effect.gen(function* () {
+            const herdr = yield* HerdrSdk;
+            return yield* Stream.runHead(
+              herdr.events.subscribe([{ type: "workspace.created" }] as const),
+            ).pipe(Effect.flip);
+          }),
+        );
+        expect(failure).toBeInstanceOf(HerdrServerError);
+        expect(failure).toMatchObject({
+          serverCode: "events_lost",
+          serverMessage: "subscriber fell behind",
+        });
       }),
     ),
   ));

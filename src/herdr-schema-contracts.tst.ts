@@ -39,6 +39,7 @@ type AgentSessionFixture = {
   sessionStartSource: Option.None<string>;
   sessionId: Option.Some<string>;
   sessionPath: Option.None<HerdrAbsolutePath>;
+  resumeArgv: Option.None<readonly [string, ...string[]]>;
 };
 
 declare const sdk: IHerdrSdk;

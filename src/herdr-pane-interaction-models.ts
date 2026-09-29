@@ -149,3 +149,17 @@ export const PaneLinkActivatedResult = Schema.Struct({
 export interface PaneLinkActivatedResult extends Schema.Schema.Type<
   typeof PaneLinkActivatedResult
 > {}
+/** Inclusive display-cell columns of one link segment on the pane's current viewport. @category schemas @since 0.9.2 */
+export const PaneLinkRegion = Schema.Struct({
+  row: PaneColumn,
+  startCol: PaneColumn,
+  endCol: PaneColumn,
+}).pipe(Schema.encodeKeys({ startCol: "start_col", endCol: "end_col" }));
+/** Viewport segment covered by a visible link. @category models @since 0.9.2 */
+export interface PaneLinkRegion extends Schema.Schema.Type<typeof PaneLinkRegion> {}
+/** Viewport regions of the link under a cell; empty when no link is present. @category schemas @since 0.9.2 */
+export const PaneLinkResolvedResult = Schema.Struct({
+  regions: Schema.Array(PaneLinkRegion),
+});
+/** Visible-link resolution result. @category models @since 0.9.2 */
+export interface PaneLinkResolvedResult extends Schema.Schema.Type<typeof PaneLinkResolvedResult> {}

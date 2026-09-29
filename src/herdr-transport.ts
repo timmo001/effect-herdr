@@ -113,9 +113,9 @@ export type HerdrTransportMethodError<Method extends WireMethod> =
   | HerdrTransportRequestError
   | (Method extends "events.wait" ? HerdrUnsupportedEvent : never);
 
-type HerdrStreamWireMethod = "events.subscribe";
+type HerdrStreamWireMethod = "events.subscribe" | "server.ssh_agent.register";
 
-type HerdrOrdinaryWireMethod = Exclude<WireMethod, "events.wait">;
+type HerdrOrdinaryWireMethod = Exclude<WireMethod, "events.wait" | "server.ssh_agent.register">;
 
 /**
  * Correlated success returned after the generated method result contract is checked.
@@ -166,7 +166,7 @@ export interface IHerdrTransport {
       HerdrTransportRequestError | HerdrUnsupportedEvent
     >;
   };
-  /** Acquires a long-lived subscription socket in the current scope. */
+  /** Acquires a long-lived subscription or SSH agent lease socket in the current scope. */
   readonly openStream: <Method extends HerdrStreamWireMethod>(
     method: Method,
     params: HerdrWireParameters<Method>,
@@ -399,7 +399,8 @@ export const makeHerdrTransport = Effect.gen(function* () {
     params: HerdrWireParameters<Method>,
     options: HerdrTransportRequestOptionsEncoded = {},
   ): Effect.Effect<HerdrTransportStream<Method>, HerdrTransportRequestError, Scope.Scope> => {
-    const operation = "event_subscription";
+    const operation =
+      method === "events.subscribe" ? "event_subscription" : "ssh_agent_registration";
 
     return Effect.fn("HerdrTransport.openStream")(function* () {
       const parsedOptions = yield* parseHerdrTransportRequestOptions(options).pipe(

@@ -35,10 +35,13 @@ transport or service boundary.
 correlation, bounded newline framing, response parsing, compatibility memoization, deadlines,
 stream handshakes, and interruption-safe cleanup. Lifecycle subscriptions are live-only from server
 acceptance; cache consumers bootstrap by buffering an accepted subscription across a session snapshot.
+A subscriber that falls behind receives a server error such as `events_lost` and the stream fails
+with `HerdrServerError`; consumers resubscribe and take a fresh snapshot rather than trusting stale state.
 
-Ordinary requests own one socket through `Effect.acquireUseRelease`. Event subscriptions use scoped
-acquisition. Event consumption hides ordinary Scope management. Event reads are pull-based and
-backpressured.
+Ordinary requests own one socket through `Effect.acquireUseRelease`. Event subscriptions and SSH
+agent registrations use scoped acquisition: the server keeps the registration only while its
+connection stays open, so the lease socket belongs to the caller's Scope. Event consumption hides
+ordinary Scope management. Event reads are pull-based and backpressured.
 
 ### Client-shell endpoint ownership
 

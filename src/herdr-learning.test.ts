@@ -134,6 +134,37 @@ test("sdk learning: scoped-subscription", (context) =>
     }),
   ));
 
+// Controls: one accepted registration; the fixture keeps its socket open like Herdr's lease.
+// Hypothesis: An SSH agent lease holds its socket until the owning scope closes.
+test("sdk learning: ssh-agent-lease", (context) =>
+  runHerdrTest(
+    context,
+    Effect.gen(function* () {
+      const server = yield* startHerdrTestServer((request) =>
+        Effect.succeed(makeHerdrSuccessResponse(request)),
+      );
+      yield* runLearningSdk(
+        server.socketPath,
+        Effect.gen(function* () {
+          const sdk = yield* HerdrSdk;
+          yield* Effect.scoped(
+            Effect.gen(function* () {
+              yield* sdk.server.registerSshAgent({ socketPath: "/tmp/herdr-learning/agent.sock" });
+              yield* server.waitFor("close", 1);
+              expect(server.openSocketMethods()).toEqual(["server.ssh_agent.register"]);
+            }),
+          );
+          yield* server.waitFor("close", 2);
+        }),
+      );
+      expect(server.requests.at(-1)).toEqual({
+        id: expect.any(String),
+        method: "server.ssh_agent.register",
+        params: { socket_path: "/tmp/herdr-learning/agent.sock" },
+      });
+    }),
+  ));
+
 // The only SDK composition point supplies a fixture path, never ambient Herdr discovery.
 function runLearningSdk<A, E>(socketPath: string, recipe: Effect.Effect<A, E, HerdrSdk>) {
   return recipe.pipe(

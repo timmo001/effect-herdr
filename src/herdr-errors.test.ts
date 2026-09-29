@@ -40,7 +40,7 @@ test("typed errors own searchable stable message prefixes", () => {
     "request-2",
     new Error("closed"),
   );
-  const timeout = new HerdrRequestTimeout("event_subscription", "request-2", 1000);
+  const timeout = new HerdrRequestTimeout("ssh_agent_registration", "request-2", 1000);
 
   expect(transport.message.startsWith("Herdr transport failed")).toBe(true);
   expect(timeout.message.startsWith("Herdr request timed out")).toBe(true);

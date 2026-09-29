@@ -120,6 +120,9 @@ export const ServerCapabilities = Schema.Struct({
   healthCheck: Schema.optionalKey(Schema.Boolean).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(false), { encodingStrategy: "omit" }),
   ),
+  sshAgentRegistration: Schema.optionalKey(Schema.Boolean).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(false), { encodingStrategy: "omit" }),
+  ),
 }).pipe(
   Schema.encodeKeys({
     liveHandoff: "live_handoff",
@@ -127,6 +130,7 @@ export const ServerCapabilities = Schema.Struct({
     endpointProtocolGeneration: "endpoint_protocol_generation",
     surfaceInterest: "surface_interest",
     healthCheck: "health_check",
+    sshAgentRegistration: "ssh_agent_registration",
   }),
 );
 
@@ -434,6 +438,7 @@ export const Pane = Schema.Struct({
   ),
   agentSession: Schema.OptionFromOptionalNullOr(AgentSessionReference),
   scroll: Schema.OptionFromOptionalNullOr(PaneScroll),
+  restoreError: optionalString,
   revision: HerdrRevision,
 }).pipe(
   Schema.encodeKeys({
@@ -448,6 +453,7 @@ export const Pane = Schema.Struct({
     agentStatus: "agent_status",
     stateLabels: "state_labels",
     agentSession: "agent_session",
+    restoreError: "restore_error",
   }),
 );
 
@@ -499,6 +505,7 @@ export const Agent = Schema.Struct({
       encodingStrategy: "omit",
     }),
   ),
+  completionSequence: Schema.OptionFromOptionalNullOr(HerdrStateChangeSequence),
   cwd: optionalAbsolutePath,
   foregroundCwd: optionalAbsolutePath,
   revision: HerdrRevision,
@@ -518,6 +525,7 @@ export const Agent = Schema.Struct({
     launchPending: "launch_pending",
     interactiveReady: "interactive_ready",
     stateChangeSequence: "state_change_seq",
+    completionSequence: "completion_seq",
     foregroundCwd: "foreground_cwd",
   }),
 );
@@ -699,6 +707,36 @@ export interface ServerLiveHandoffInput extends Schema.Schema.Type<typeof Server
  */
 export interface ServerLiveHandoffInputEncoded extends Schema.Codec.Encoded<
   typeof ServerLiveHandoffInput
+> {}
+
+/**
+ * Remote-host SSH agent socket registered for the lifetime of one API connection.
+ *
+ * @category schemas
+ * @since 0.9.2
+ */
+export const ServerSshAgentRegisterInput = Schema.Struct({
+  socketPath: HerdrAbsolutePath,
+});
+
+/**
+ * Normalized SSH agent registration request.
+ *
+ * @category models
+ * @since 0.9.2
+ */
+export interface ServerSshAgentRegisterInput extends Schema.Schema.Type<
+  typeof ServerSshAgentRegisterInput
+> {}
+
+/**
+ * Ergonomic SSH agent registration request accepted by the server service.
+ *
+ * @category models
+ * @since 0.9.2
+ */
+export interface ServerSshAgentRegisterInputEncoded extends Schema.Codec.Encoded<
+  typeof ServerSshAgentRegisterInput
 > {}
 
 /**
@@ -2086,6 +2124,7 @@ export const PaneAgentReportInput = Schema.Struct({
   sequence: Schema.OptionFromOptionalKey(HerdrStateChangeSequence),
   sessionId: Schema.OptionFromOptionalKey(Schema.String),
   sessionPath: Schema.OptionFromOptionalKey(HerdrAbsolutePath),
+  resumeArgv: Schema.OptionFromOptionalKey(Schema.NonEmptyArray(Schema.String)),
 }).pipe(
   Schema.refine(
     (value): value is typeof value & PaneAgentSessionSelection =>
@@ -2125,6 +2164,7 @@ export const PaneAgentSessionReportInput = Schema.Struct({
   sessionStartSource: Schema.OptionFromOptionalKey(Schema.String),
   sessionId: Schema.OptionFromOptionalKey(Schema.String),
   sessionPath: Schema.OptionFromOptionalKey(HerdrAbsolutePath),
+  resumeArgv: Schema.OptionFromOptionalKey(Schema.NonEmptyArray(Schema.String)),
 }).pipe(
   Schema.refine(
     (value): value is typeof value & PaneAgentSessionSelection =>

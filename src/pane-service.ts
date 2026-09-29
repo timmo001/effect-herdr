@@ -257,6 +257,11 @@ export interface IPaneService extends IPaneInteraction {
     input: PaneReleaseAgentInputEncoded,
     options?: HerdrTransportRequestOptionsEncoded,
   ) => Effect.Effect<void, HerdrTransportRequestError>;
+  /** Clears one pane's terminal screen. */
+  readonly clear: (
+    id: PaneId,
+    options?: HerdrTransportRequestOptionsEncoded,
+  ) => Effect.Effect<void, HerdrTransportRequestError>;
   /** Closes one pane. */
   readonly close: (
     id: PaneId,
@@ -630,6 +635,7 @@ export const makePaneService = Effect.gen(function* () {
             seq: Option.getOrNull(parsed.sequence),
             agentSessionId: Option.getOrNull(parsed.sessionId),
             agentSessionPath: Option.getOrNull(parsed.sessionPath),
+            ...(Option.isSome(parsed.resumeArgv) ? { resumeArgv: parsed.resumeArgv.value } : {}),
           },
           options,
         );
@@ -654,6 +660,7 @@ export const makePaneService = Effect.gen(function* () {
               sessionStartSource: Option.getOrNull(parsed.sessionStartSource),
               agentSessionId: Option.getOrNull(parsed.sessionId),
               agentSessionPath: Option.getOrNull(parsed.sessionPath),
+              ...(Option.isSome(parsed.resumeArgv) ? { resumeArgv: parsed.resumeArgv.value } : {}),
             },
             options,
           );
@@ -737,6 +744,9 @@ export const makePaneService = Effect.gen(function* () {
           options,
         );
       }),
+    ),
+    clear: defineHerdrOperation("PaneService.clear", (id, options = {}) =>
+      transport.request("pane.clear", { paneId: id }, options).pipe(Effect.asVoid),
     ),
     close: defineHerdrOperation("PaneService.close", (id, options = {}) =>
       transport.request("pane.close", { paneId: id }, options).pipe(Effect.asVoid),

@@ -59,6 +59,11 @@ export function parseHerdrWireResponse(
   ]);
 }
 
+/** Checks whether an untrusted line is a schema-valid error response. @category decoding @since 0.9.2 */
+export function isHerdrWireErrorResponse(value: unknown): value is ErrorResponse {
+  return parseErrorResponse(value);
+}
+
 /**
  * Parses an untrusted event line into one generated Herdr envelope family.
  *

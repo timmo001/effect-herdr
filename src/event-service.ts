@@ -21,7 +21,7 @@ import {
 import herdrApiSchema from "../schema/herdr-api.schema.json" with { type: "json" };
 import type { EventEnvelope } from "./generated/wire-event.ts";
 import type { SubscriptionEventEnvelope } from "./generated/wire-subscription-event.ts";
-import { parseHerdrWireEvent } from "./herdr-wire-parser.ts";
+import { isHerdrWireErrorResponse, parseHerdrWireEvent } from "./herdr-wire-parser.ts";
 import {
   EventMatch,
   type EventMatch as EventMatchValue,
@@ -38,6 +38,7 @@ import {
 import { decodeHerdrInput, decodeHerdrWire } from "./herdr-schema-boundary.ts";
 import {
   HerdrInvalidResponse,
+  HerdrServerError,
   HerdrTransportError,
   HerdrUnsupportedEvent,
 } from "./herdr-errors.ts";
@@ -251,12 +252,18 @@ export const eventServiceLayer = eventServiceLayerWithoutDependencies.pipe(
 function decodeEventLine(
   bytes: Uint8Array,
   requestId: string,
-): Result.Result<HerdrEventValue, HerdrInvalidResponse | HerdrUnsupportedEvent> {
+): Result.Result<HerdrEventValue, HerdrInvalidResponse | HerdrServerError | HerdrUnsupportedEvent> {
   const parsedJson = Result.try({
     try: () => JSON.parse(eventUtf8Decoder.decode(bytes)),
     catch: (cause) => new HerdrInvalidResponse("malformed_json", requestId, cause),
   });
   if (Result.isFailure(parsedJson)) return parsedJson;
+
+  // Herdr ends a subscription with an error line, such as events_lost, after it falls behind.
+  if (isHerdrWireErrorResponse(parsedJson.success)) {
+    const { code, message } = parsedJson.success.error;
+    return Result.fail(new HerdrServerError(code, message, requestId));
+  }
 
   const parsedEnvelope = Result.try({
     try: () => parseHerdrWireEvent(parsedJson.success, requestId),
@@ -322,13 +329,13 @@ function parseHerdrEventChunks<const Type extends EventSubscriptionSpec["type"]>
   ReadonlyArray<
     Result.Result<
       EventForSubscription<{ type: Type }>,
-      HerdrInvalidResponse | HerdrTransportError | HerdrUnsupportedEvent
+      HerdrInvalidResponse | HerdrServerError | HerdrTransportError | HerdrUnsupportedEvent
     >
   >,
 ] {
   const decodedEvents: Result.Result<
     EventForSubscription<{ type: Type }>,
-    HerdrInvalidResponse | HerdrTransportError | HerdrUnsupportedEvent
+    HerdrInvalidResponse | HerdrServerError | HerdrTransportError | HerdrUnsupportedEvent
   >[] = [];
 
   for (const input of inputs) {

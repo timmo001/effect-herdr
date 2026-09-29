@@ -21,6 +21,7 @@ import {
   PaneLinkActivateInput,
   type PaneLinkActivateInputEncoded,
   PaneLinkActivatedResult,
+  PaneLinkResolvedResult,
 } from "./herdr-pane-interaction-models.ts";
 import { defineHerdrOperation } from "./herdr-effect-operation.ts";
 import { decodeHerdrInput, decodeHerdrWire } from "./herdr-schema-boundary.ts";
@@ -40,6 +41,7 @@ const parseSelectionResult = Schema.decodeUnknownEffect(PaneSelectionResult);
 const parseMotionResult = Schema.decodeUnknownEffect(PaneCopyMotionResult);
 const parseSearchResult = Schema.decodeUnknownEffect(PaneCopySearchResult);
 const parseLinkResult = Schema.decodeUnknownEffect(PaneLinkActivatedResult);
+const parseLinkResolvedResult = Schema.decodeUnknownEffect(PaneLinkResolvedResult);
 const wireCopyMotions = {
   lineEnd: "line_end",
   firstNonBlank: "first_non_blank",
@@ -89,6 +91,12 @@ export interface IPaneInteraction {
   ) => Effect.Effect<PaneCopySearchResult, HerdrTransportRequestError>;
   /** Visible-link resolution and plugin activation. */
   readonly link: {
+    /** Reads the viewport regions of the link under a cell without invoking any handler. */
+    readonly resolve: (
+      id: PaneId,
+      input: PaneLinkActivateInputEncoded,
+      options?: HerdrTransportRequestOptionsEncoded,
+    ) => Effect.Effect<PaneLinkResolvedResult, HerdrTransportRequestError>;
     /** Invokes a matching plugin link handler; does not open a browser. */
     readonly activate: (
       id: PaneId,
@@ -155,6 +163,21 @@ export function makePaneInteraction(transport: IHerdrTransport): IPaneInteractio
       }),
     ),
     link: {
+      resolve: defineHerdrOperation("PaneService.link.resolve", (id, input, options = {}) =>
+        Effect.gen(function* () {
+          const parsed = yield* decodeHerdrInput("PaneService.link.resolve", parseLink, input);
+          const response = yield* transport.request(
+            "pane.link.resolve",
+            { paneId: id, ...parsed },
+            options,
+          );
+          return yield* decodeHerdrWire(
+            parseLinkResolvedResult,
+            response.result,
+            response.requestId,
+          );
+        }),
+      ),
       activate: defineHerdrOperation("PaneService.link.activate", (id, input, options = {}) =>
         Effect.gen(function* () {
           const parsed = yield* decodeHerdrInput("PaneService.link.activate", parseLink, input);

@@ -1,11 +1,11 @@
 /**
  * Controls Herdr server lifecycle and compatibility operations.
  *
- * The server service exposes ping, stop, live handoff, configuration reload, and agent-manifest cache inspection through the shared transport.
+ * The server service exposes ping, stop, live handoff, configuration reload, agent-manifest cache inspection, and scope-owned SSH agent registration through the shared transport.
  *
  * @since 0.8.2
  */
-import { Context, Effect, Layer, Option, Schema } from "effect";
+import { Context, Effect, Layer, Option, Schema, Scope, Stream } from "effect";
 import {
   AgentManifest,
   AgentManifestStatus,
@@ -13,7 +13,10 @@ import {
   PingResult,
   ServerLiveHandoffInput,
   type ServerLiveHandoffInputEncoded,
+  ServerSshAgentRegisterInput,
+  type ServerSshAgentRegisterInputEncoded,
 } from "./herdr-models.ts";
+import type { HerdrTransportError } from "./herdr-errors.ts";
 import { decodeHerdrInput, decodeHerdrWire } from "./herdr-schema-boundary.ts";
 import { defineHerdrOperation } from "./herdr-effect-operation.ts";
 import {
@@ -28,6 +31,7 @@ const parseAgentManifestStatus = Schema.decodeUnknownEffect(AgentManifestStatus)
 const parseConfigReloadResult = Schema.decodeUnknownEffect(ConfigReloadResult);
 const parsePingResult = Schema.decodeUnknownEffect(PingResult);
 const parseServerLiveHandoffInput = Schema.decodeEffect(ServerLiveHandoffInput);
+const parseServerSshAgentRegisterInput = Schema.decodeEffect(ServerSshAgentRegisterInput);
 
 /**
  * Expected failure union for server lifecycle and compatibility operations.
@@ -36,6 +40,19 @@ const parseServerLiveHandoffInput = Schema.decodeEffect(ServerLiveHandoffInput);
  * @since 0.8.2
  */
 export type ServerOperationError = HerdrTransportRequestError;
+
+/**
+ * Active SSH agent registration held by an open API connection.
+ *
+ * @category models
+ * @since 0.9.2
+ */
+export interface ServerSshAgentLease {
+  /** Wire request identifier of the accepted registration. */
+  readonly requestId: string;
+  /** Completes when the server closes the connection, ending the registration early. */
+  readonly closed: Effect.Effect<void, HerdrTransportError>;
+}
 
 /**
  * Server lifecycle, compatibility, configuration, and manifest capability.
@@ -69,6 +86,11 @@ export interface IServerService {
   readonly reloadAgentManifests: (
     options?: HerdrTransportRequestOptionsEncoded,
   ) => Effect.Effect<readonly AgentManifest[], ServerOperationError>;
+  /** Registers a remote-host SSH agent socket until the current scope closes; Unix servers only. */
+  readonly registerSshAgent: (
+    input: ServerSshAgentRegisterInputEncoded,
+    options?: HerdrTransportRequestOptionsEncoded,
+  ) => Effect.Effect<ServerSshAgentLease, ServerOperationError, Scope.Scope>;
 }
 
 /**
@@ -144,6 +166,23 @@ export const makeServerService = Effect.gen(function* () {
             response.result.manifests,
             response.requestId,
           );
+        }),
+    ),
+    registerSshAgent: defineHerdrOperation(
+      "ServerService.registerSshAgent",
+      (input, options = {}) =>
+        Effect.gen(function* () {
+          const parsed = yield* decodeHerdrInput(
+            "ServerService.registerSshAgent",
+            parseServerSshAgentRegisterInput,
+            input,
+          );
+          const opened = yield* transport.openStream(
+            "server.ssh_agent.register",
+            { socketPath: parsed.socketPath },
+            options,
+          );
+          return { requestId: opened.requestId, closed: Stream.runDrain(opened.readBytes) };
         }),
     ),
   });

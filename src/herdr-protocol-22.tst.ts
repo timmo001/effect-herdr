@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, type Scope } from "effect";
 import { expectTypeOf } from "vite-plus/test";
 import {
   type IHerdrSdk,
@@ -50,4 +50,6 @@ const dependent = sdk.clientShell.withConnection(connectionInput, () => dependen
 expectTypeOf(dependent).toEqualTypeOf<
   Effect.Effect<number, HerdrEndpointConnectError | HerdrInvalidInput, "application-dependency">
 >();
+const sshAgentLease = sdk.server.registerSshAgent({ socketPath: "/tmp/agent.sock" });
+expectTypeOf<Effect.Services<typeof sshAgentLease>>().toEqualTypeOf<Scope.Scope>();
 expectTypeOf<keyof WorkspaceCreateOptionsEncoded>().toEqualTypeOf<"focus" | "label" | "env">();

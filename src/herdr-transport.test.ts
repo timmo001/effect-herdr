@@ -289,8 +289,8 @@ test.for(["malformed", "timeout", "interrupted"] as const)(
             Effect.gen(function* () {
               const transport = yield* HerdrTransport;
               const handshake = transport.openStream(
-                "events.subscribe",
-                { subscriptions: [{ type: "workspace.created" }] },
+                "server.ssh_agent.register",
+                { socketPath: "/tmp/agent.sock" },
                 { requestTimeout: Duration.millis(30) },
               );
               if (failureMode === "interrupted") {
@@ -345,8 +345,8 @@ test("stream handshake preserves split UTF-8 and exact coalesced trailing bytes"
         Effect.scoped(
           Effect.gen(function* () {
             const transport = yield* HerdrTransport;
-            const stream = yield* transport.openStream("events.subscribe", {
-              subscriptions: [{ type: "workspace.created" }],
+            const stream = yield* transport.openStream("server.ssh_agent.register", {
+              socketPath: "/tmp/agent.sock",
             });
             return yield* Stream.runCollect(stream.readBytes);
           }),
@@ -416,14 +416,12 @@ test.for(["request", "stream"] as const)(
               const options = { requestId: "deadline", requestTimeout: Duration.millis(30) };
               const failure = yield* (
                 kind === "request"
-                  ? transport.request("server.stop", {}, options).pipe(Effect.asVoid)
-                  : transport
-                      .openStream(
-                        "events.subscribe",
-                        { subscriptions: [{ type: "workspace.created" }] },
-                        options,
-                      )
-                      .pipe(Effect.asVoid)
+                  ? transport.request("server.stop", {}, options)
+                  : transport.openStream(
+                      "server.ssh_agent.register",
+                      { socketPath: "/tmp/agent.sock" },
+                      options,
+                    )
               ).pipe(Effect.flip);
               expect(failure).toMatchObject({
                 _tag: "HerdrRequestTimeout",
