@@ -717,6 +717,15 @@ bun run example -- examples/multi-agent-idea-lab.ts "Design a safer release work
 See [`examples/README.md`](examples/README.md) for prerequisites, side effects, and the complete
 catalog.
 
+## Agent skill
+
+The [`effect-herdr`](skills/effect-herdr/SKILL.md) skill guides Effect integrations towards this
+SDK and its current documentation. Install it with:
+
+```sh
+npx skills add timmo001/effect-herdr
+```
+
 ## Development
 
 Start with [AGENTS.md](AGENTS.md), the [architecture](docs/architecture.md), and the
