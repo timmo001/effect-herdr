@@ -4,7 +4,7 @@
  * @since 0.9.0
  */
 import { Buffer } from "node:buffer";
-import { Result } from "effect";
+import { Match, Result } from "effect";
 import { HerdrEndpointInvalidMessage } from "./herdr-endpoint-errors.ts";
 import type { ClientShellKeyInput, ClientShellMouseInput } from "./herdr-client-shell-input.ts";
 
@@ -107,6 +107,7 @@ function readRect(reader: EndpointReader) {
 }
 
 function readCursor(reader: EndpointReader) {
+  // oxlint-disable-next-line anti-slop/no-shape-in-symbol-names -- DECSCUSR cursor shape is the public protocol field.
   return { x: reader.u16(), y: reader.u16(), visible: reader.bool(), shape: reader.byte() };
 }
 
@@ -461,12 +462,13 @@ export function encodeEndpointKey(
   id: string,
   input: ClientShellKeyInput,
 ): Uint8Array {
-  const key =
-    input.code.kind === "named"
-      ? encodeUnsigned(endpointNamedKeys[input.code.name])
-      : input.code.kind === "function"
-        ? Buffer.from([16, input.code.number])
-        : Buffer.concat([Buffer.from([15]), Buffer.from(input.code.character, "utf8")]);
+  const key = Match.value(input.code).pipe(
+    Match.discriminatorsExhaustive("kind")({
+      named: (code) => encodeUnsigned(endpointNamedKeys[code.name]),
+      function: (code) => Buffer.from([16, code.number]),
+      character: (code) => Buffer.concat([Buffer.from([15]), Buffer.from(code.character, "utf8")]),
+    }),
+  );
 
   return frameEndpointPayload([
     encodeUnsigned(target === "pane" ? 13 : 14),
@@ -475,7 +477,13 @@ export function encodeEndpointKey(
     encodeUnsigned(0),
     key,
     Buffer.from([input.modifiers ?? 0]),
-    encodeUnsigned(input.phase === "repeat" ? 1 : input.phase === "release" ? 2 : 0),
+    encodeUnsigned(
+      Match.value(input.phase).pipe(
+        Match.when("repeat", () => 1),
+        Match.when("release", () => 2),
+        Match.orElse(() => 0),
+      ),
+    ),
     encodeUnsigned(input.repeatCount ?? 1),
     encodeOptional(input.shiftedCodepoint, encodeUnsigned),
     encodeOptional(input.generatedText, encodeText),

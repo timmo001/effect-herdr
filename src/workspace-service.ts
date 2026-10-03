@@ -5,7 +5,7 @@
  *
  * @since 0.8.2
  */
-import { Context, Effect, Layer, Option, Schema } from "effect";
+import { Context, Effect, Layer, Match, Option, Schema, type Types } from "effect";
 import { HerdrAbsolutePath, type WorkspaceId } from "./herdr-domain.ts";
 import {
   Workspace,
@@ -26,6 +26,7 @@ import {
   herdrTransportLayer,
   type HerdrTransportRequestError,
   type HerdrTransportRequestOptionsEncoded,
+  type HerdrWireParameters,
 } from "./herdr-transport.ts";
 
 const parseWorkspace = Schema.decodeUnknownEffect(Workspace);
@@ -179,23 +180,23 @@ export const makeWorkspaceService = Effect.gen(function* () {
     Effect.gen(function* () {
       const parsed = yield* decodeHerdrInput(operation, parseWorkspaceCreateOptions, input);
 
-      const directory =
-        source.kind === "directory"
-          ? { cwd: source.cwd }
-          : source.kind === "workspace"
-            ? { sourceWorkspaceId: source.sourceWorkspaceId }
-            : {};
-
-      const response = yield* transport.request(
-        "workspace.create",
-        {
-          ...directory,
-          label: Option.getOrNull(parsed.label),
-          ...(Option.isSome(parsed.env) ? { env: parsed.env.value } : {}),
-          ...(Option.isSome(parsed.focus) ? { focus: parsed.focus.value } : {}),
-        },
-        options,
+      const parameters: Types.Mutable<HerdrWireParameters<"workspace.create">> = Match.value(
+        source,
+      ).pipe(
+        Match.discriminatorsExhaustive("kind")({
+          default: () => ({}),
+          directory: ({ cwd }) => ({ cwd }),
+          workspace: ({ sourceWorkspaceId }) => ({ sourceWorkspaceId }),
+        }),
       );
+
+      parameters.label = Option.getOrNull(parsed.label);
+
+      if (Option.isSome(parsed.env)) parameters.env = parsed.env.value;
+
+      if (Option.isSome(parsed.focus)) parameters.focus = parsed.focus.value;
+
+      const response = yield* transport.request("workspace.create", parameters, options);
 
       return yield* decodeHerdrWire(
         parseWorkspaceCreateResult,

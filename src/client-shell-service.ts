@@ -16,7 +16,9 @@ import {
   Schema,
   Scope,
   Semaphore,
+  Predicate,
   Stream,
+  type Types,
 } from "effect";
 import {
   HerdrAbsolutePath,
@@ -30,6 +32,7 @@ import {
   HerdrTransport,
   herdrTransportLayer,
   type HerdrTransportRequestError,
+  type HerdrWireParameters,
 } from "./herdr-transport.ts";
 import { HerdrInvalidInput } from "./herdr-errors.ts";
 import {
@@ -618,8 +621,8 @@ export const makeClientShellService = Effect.gen(function* () {
                   Effect.tapError((error) => {
                     // A definite rejection leaves interest unchanged; uncertain outcomes invalidate the session.
                     if (
-                      error._tag !== "HerdrServerError" &&
-                      error._tag !== "HerdrEndpointUnsupportedMethod"
+                      !Predicate.isTagged(error, "HerdrServerError") &&
+                      !Predicate.isTagged(error, "HerdrEndpointUnsupportedMethod")
                     )
                       return wire.fail(new HerdrEndpointInvalidMessage("schema"));
 
@@ -750,13 +753,15 @@ export const makeClientShellService = Effect.gen(function* () {
                 input,
               );
 
-              yield* wire.request("command.invoke", {
+              const parameters: Types.Mutable<HerdrWireParameters<"command.invoke">> = {
                 commandId: command.commandId,
                 tabId,
-                ...(target.expectedWorkspaceId === undefined
-                  ? {}
-                  : { workspaceId: target.expectedWorkspaceId }),
-              });
+              };
+
+              if (target.expectedWorkspaceId !== undefined)
+                parameters.workspaceId = target.expectedWorkspaceId;
+
+              yield* wire.request("command.invoke", parameters);
             }),
           invokeInPane: (command, paneId, input = {}) =>
             Effect.gen(function* () {
@@ -768,17 +773,20 @@ export const makeClientShellService = Effect.gen(function* () {
                 input,
               );
 
-              yield* wire.request("command.invoke", {
+              const parameters: Types.Mutable<HerdrWireParameters<"command.invoke">> = {
                 commandId: command.commandId,
                 paneId,
-                ...(target.expectedWorkspaceId === undefined
-                  ? {}
-                  : { workspaceId: target.expectedWorkspaceId }),
-                ...(target.expectedTabId === undefined ? {} : { tabId: target.expectedTabId }),
-                ...(target.selection === undefined
-                  ? {}
-                  : { selection: { paneId, ...target.selection } }),
-              });
+              };
+
+              if (target.expectedWorkspaceId !== undefined)
+                parameters.workspaceId = target.expectedWorkspaceId;
+
+              if (target.expectedTabId !== undefined) parameters.tabId = target.expectedTabId;
+
+              if (target.selection !== undefined)
+                parameters.selection = { paneId, ...target.selection };
+
+              yield* wire.request("command.invoke", parameters);
             }),
         },
         productAnnouncements: {

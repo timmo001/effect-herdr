@@ -4,7 +4,7 @@
  *
  * @since 0.8.2
  */
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 import type { WireMethod, WireMethodMap } from "./generated/wire-method-map.ts";
 import { AgentPromptInput, AgentWaitInput, PaneReadInput } from "./herdr-models.ts";
 
@@ -131,14 +131,14 @@ function isWireParameterArray<Value extends WireParameterJson>(
   return Array.isArray(value);
 }
 
-function encodeWireParameterValue<Value extends WireParameterJson>(value: Value): string {
+function encodeWireParameterValue(value: WireParameterJson): string {
   if (value === undefined) return "null";
 
   if (isWireParameterArray(value)) {
     return `[${Array.from(value, (child) => encodeWireParameterValue(child)).join(",")}]`;
   }
 
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (value === null || !Predicate.isObject(value)) return JSON.stringify(value);
 
   const fields: string[] = [];
 

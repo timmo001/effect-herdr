@@ -42,7 +42,7 @@ export interface HerdrSocketLineSplit {
  * @category constructors
  * @since 0.8.2
  */
-export function makeHerdrSocketLineBuffer(): HerdrSocketLineBuffer {
+export function emptyHerdrSocketLineBuffer(): HerdrSocketLineBuffer {
   return { segments: [], byteLength: 0 };
 }
 
@@ -97,7 +97,7 @@ export function splitHerdrSocketLines(
         );
 
         return Result.succeed({
-          buffer: makeHerdrSocketLineBuffer(),
+          buffer: emptyHerdrSocketLineBuffer(),
           lines,
           remainder,
         });

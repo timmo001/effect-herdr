@@ -17,11 +17,13 @@ import {
   Exit,
   Layer,
   Option,
+  Predicate,
   Result,
   Schema,
   Scope,
   Stream,
   Tracer,
+  type Types,
 } from "effect";
 import {
   type WireMethod,
@@ -47,7 +49,7 @@ import {
 } from "./herdr-errors.ts";
 import {
   type HerdrSocketLineBuffer,
-  makeHerdrSocketLineBuffer,
+  emptyHerdrSocketLineBuffer,
   splitHerdrSocketLines,
 } from "./herdr-socket-lines.ts";
 
@@ -219,7 +221,10 @@ function annotateHerdrTransportExit<
     if (Option.isNone(error)) return;
     yield* Effect.annotateCurrentSpan("herdr.error_tag", error.value._tag);
 
-    if (error.value._tag === "HerdrTransportError" || error.value._tag === "HerdrInvalidResponse") {
+    if (
+      Predicate.isTagged(error.value, "HerdrTransportError") ||
+      Predicate.isTagged(error.value, "HerdrInvalidResponse")
+    ) {
       yield* Effect.annotateCurrentSpan("herdr.reason", error.value.reason);
     }
   });
@@ -347,12 +352,15 @@ export const makeHerdrTransport = Effect.gen(function* () {
 
   const pingParameters: HerdrWireParameters<"ping"> = Option.match(config.application, {
     onNone: () => ({}),
-    onSome: (application) => ({
-      application: {
-        name: application.name,
-        ...(Option.isSome(application.version) ? { version: application.version.value } : {}),
-      },
-    }),
+    onSome: (application) => {
+      const pingApplication: Types.Mutable<
+        NonNullable<HerdrWireParameters<"ping">["application"]>
+      > = { name: application.name };
+
+      if (Option.isSome(application.version)) pingApplication.version = application.version.value;
+
+      return { application: pingApplication };
+    },
   });
 
   const compatibilityCache = yield* Cache.makeWith(
@@ -403,7 +411,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
       if (
         Option.isSome(checkSpan) &&
         Option.isSome(waiterSpan) &&
-        waiterSpan.value._tag === "Span"
+        Predicate.isTagged(waiterSpan.value, "Span")
       ) {
         waiterSpan.value.addLinks([{ span: checkSpan.value, attributes: {} }]);
       }
@@ -771,7 +779,7 @@ function readSocketLine(
       });
 
       const line = yield* socketBytes.pipe(
-        Stream.mapAccumArrayEffect(makeHerdrSocketLineBuffer, (state, chunks) =>
+        Stream.mapAccumArrayEffect(emptyHerdrSocketLineBuffer, (state, chunks) =>
           parseFirstHerdrSocketLine(state, chunks, requestId),
         ),
         Stream.runHead,

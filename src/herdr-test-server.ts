@@ -1,5 +1,5 @@
 import { NodeFileSystem } from "@effect/platform-node-shared";
-import { Cause, Deferred, Effect, Exit, Fiber, FileSystem, Schema, Scope } from "effect";
+import { Cause, Deferred, Effect, Exit, Fiber, FileSystem, Predicate, Schema, Scope } from "effect";
 import { createServer, type Socket } from "node:net";
 import { join } from "node:path";
 import { Ajv2020 } from "ajv/dist/2020.js";
@@ -298,7 +298,7 @@ export const startHerdrTestServer = Effect.fn("startHerdrTestServer")(function* 
                         : `${JSON.stringify(response)}\n`;
 
                     return writeChunks(socket, [
-                      typeof value === "string" ? Buffer.from(value) : value,
+                      Predicate.isString(value) ? Buffer.from(value) : value,
                     ]);
                   }),
                 ),

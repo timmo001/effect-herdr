@@ -294,6 +294,7 @@ export const ClientShellCursor = Schema.Struct({
   x: U16,
   y: U16,
   visible: Schema.Boolean,
+  // oxlint-disable-next-line anti-slop/no-shape-in-symbol-names -- DECSCUSR cursor shape is the public protocol field.
   shape: Schema.Natural.check(Schema.isLessThanOrEqualTo(255)),
 });
 

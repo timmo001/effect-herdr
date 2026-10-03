@@ -25,10 +25,10 @@ import {
 } from "./herdr-pane-interaction-models.ts";
 import { defineHerdrOperation } from "./herdr-effect-operation.ts";
 import { decodeHerdrInput, decodeHerdrWire } from "./herdr-schema-boundary.ts";
-import type {
-  IHerdrTransport,
-  HerdrTransportRequestError,
-  HerdrTransportRequestOptionsEncoded,
+import {
+  HerdrTransport,
+  type HerdrTransportRequestError,
+  type HerdrTransportRequestOptionsEncoded,
 } from "./herdr-transport.ts";
 
 const parseScroll = Schema.decodeEffect(PaneScrollInput);
@@ -117,101 +117,109 @@ export interface IPaneInteraction {
   };
 }
 
-/** Constructs parent-owned pane interaction operations using the shared transport. @category constructors @since 0.9.0 */
-export function makePaneInteraction(transport: IHerdrTransport): IPaneInteraction {
-  return {
-    scroll: defineHerdrOperation("PaneService.scroll", (id, input, options = {}) =>
-      Effect.gen(function* () {
-        const parsed = yield* decodeHerdrInput("PaneService.scroll", parseScroll, input);
+/** Parent-owned pane interaction operations using the shared transport. @category constructors @since 0.9.0 */
+export const paneInteraction: Effect.Effect<IPaneInteraction, never, HerdrTransport> = Effect.gen(
+  function* () {
+    const transport = yield* HerdrTransport;
 
-        const response = yield* transport.request(
-          "pane.scroll",
-          { paneId: id, ...parsed },
-          options,
-        );
-
-        return yield* decodeHerdrWire(parsePane, response.result.pane, response.requestId);
-      }),
-    ),
-    editScrollback: defineHerdrOperation("PaneService.editScrollback", (id, options = {}) =>
-      transport.request("pane.edit_scrollback", { paneId: id }, options).pipe(Effect.asVoid),
-    ),
-    selection: {
-      read: defineHerdrOperation("PaneService.selection.read", (id, input, options = {}) =>
+    return {
+      scroll: defineHerdrOperation("PaneService.scroll", (id, input, options = {}) =>
         Effect.gen(function* () {
-          const parsed = yield* decodeHerdrInput(
-            "PaneService.selection.read",
-            parseSelection,
-            input,
-          );
+          const parsed = yield* decodeHerdrInput("PaneService.scroll", parseScroll, input);
 
           const response = yield* transport.request(
-            "pane.selection.read",
+            "pane.scroll",
             { paneId: id, ...parsed },
             options,
           );
 
-          return yield* decodeHerdrWire(parseSelectionResult, response.result, response.requestId);
+          return yield* decodeHerdrWire(parsePane, response.result.pane, response.requestId);
         }),
       ),
-    },
-    copyMotion: defineHerdrOperation("PaneService.copyMotion", (id, input, options = {}) =>
-      Effect.gen(function* () {
-        const parsed = yield* decodeHerdrInput("PaneService.copyMotion", parseMotion, input);
+      editScrollback: defineHerdrOperation("PaneService.editScrollback", (id, options = {}) =>
+        transport.request("pane.edit_scrollback", { paneId: id }, options).pipe(Effect.asVoid),
+      ),
+      selection: {
+        read: defineHerdrOperation("PaneService.selection.read", (id, input, options = {}) =>
+          Effect.gen(function* () {
+            const parsed = yield* decodeHerdrInput(
+              "PaneService.selection.read",
+              parseSelection,
+              input,
+            );
 
-        const response = yield* transport.request(
-          "pane.copy_motion",
-          { paneId: id, ...parsed, motion: wireCopyMotions[parsed.motion] },
-          options,
-        );
+            const response = yield* transport.request(
+              "pane.selection.read",
+              { paneId: id, ...parsed },
+              options,
+            );
 
-        return yield* decodeHerdrWire(parseMotionResult, response.result, response.requestId);
-      }),
-    ),
-    copySearch: defineHerdrOperation("PaneService.copySearch", (id, input, options = {}) =>
-      Effect.gen(function* () {
-        const parsed = yield* decodeHerdrInput("PaneService.copySearch", parseSearch, input);
-
-        const response = yield* transport.request(
-          "pane.copy_search",
-          { paneId: id, ...parsed },
-          options,
-        );
-
-        return yield* decodeHerdrWire(parseSearchResult, response.result, response.requestId);
-      }),
-    ),
-    link: {
-      resolve: defineHerdrOperation("PaneService.link.resolve", (id, input, options = {}) =>
+            return yield* decodeHerdrWire(
+              parseSelectionResult,
+              response.result,
+              response.requestId,
+            );
+          }),
+        ),
+      },
+      copyMotion: defineHerdrOperation("PaneService.copyMotion", (id, input, options = {}) =>
         Effect.gen(function* () {
-          const parsed = yield* decodeHerdrInput("PaneService.link.resolve", parseLink, input);
+          const parsed = yield* decodeHerdrInput("PaneService.copyMotion", parseMotion, input);
 
           const response = yield* transport.request(
-            "pane.link.resolve",
+            "pane.copy_motion",
+            { paneId: id, ...parsed, motion: wireCopyMotions[parsed.motion] },
+            options,
+          );
+
+          return yield* decodeHerdrWire(parseMotionResult, response.result, response.requestId);
+        }),
+      ),
+      copySearch: defineHerdrOperation("PaneService.copySearch", (id, input, options = {}) =>
+        Effect.gen(function* () {
+          const parsed = yield* decodeHerdrInput("PaneService.copySearch", parseSearch, input);
+
+          const response = yield* transport.request(
+            "pane.copy_search",
             { paneId: id, ...parsed },
             options,
           );
 
-          return yield* decodeHerdrWire(
-            parseLinkResolvedResult,
-            response.result,
-            response.requestId,
-          );
+          return yield* decodeHerdrWire(parseSearchResult, response.result, response.requestId);
         }),
       ),
-      activate: defineHerdrOperation("PaneService.link.activate", (id, input, options = {}) =>
-        Effect.gen(function* () {
-          const parsed = yield* decodeHerdrInput("PaneService.link.activate", parseLink, input);
+      link: {
+        resolve: defineHerdrOperation("PaneService.link.resolve", (id, input, options = {}) =>
+          Effect.gen(function* () {
+            const parsed = yield* decodeHerdrInput("PaneService.link.resolve", parseLink, input);
 
-          const response = yield* transport.request(
-            "pane.link.activate",
-            { paneId: id, ...parsed },
-            options,
-          );
+            const response = yield* transport.request(
+              "pane.link.resolve",
+              { paneId: id, ...parsed },
+              options,
+            );
 
-          return yield* decodeHerdrWire(parseLinkResult, response.result, response.requestId);
-        }),
-      ),
-    },
-  };
-}
+            return yield* decodeHerdrWire(
+              parseLinkResolvedResult,
+              response.result,
+              response.requestId,
+            );
+          }),
+        ),
+        activate: defineHerdrOperation("PaneService.link.activate", (id, input, options = {}) =>
+          Effect.gen(function* () {
+            const parsed = yield* decodeHerdrInput("PaneService.link.activate", parseLink, input);
+
+            const response = yield* transport.request(
+              "pane.link.activate",
+              { paneId: id, ...parsed },
+              options,
+            );
+
+            return yield* decodeHerdrWire(parseLinkResult, response.result, response.requestId);
+          }),
+        ),
+      },
+    };
+  },
+);

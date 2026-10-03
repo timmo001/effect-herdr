@@ -3,7 +3,7 @@
  * Command execution can change focus and is never retried automatically.
  * @since 0.9.0
  */
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer, Schema, type Types } from "effect";
 import {
   type HerdrCommandId,
   type PaneId,
@@ -19,6 +19,7 @@ import {
   herdrTransportLayer,
   type HerdrTransportRequestError,
   type HerdrTransportRequestOptionsEncoded,
+  type HerdrWireParameters,
 } from "./herdr-transport.ts";
 
 /** Optional parent assertion for a tab-scoped command. @category schemas @since 0.9.0 */
@@ -108,17 +109,15 @@ export const makeCommandService = Effect.gen(function* () {
             input,
           );
 
-          yield* transport.request(
-            "command.invoke",
-            {
-              commandId,
-              tabId,
-              ...(parsed.expectedWorkspaceId === undefined
-                ? {}
-                : { workspaceId: parsed.expectedWorkspaceId }),
-            },
-            options,
-          );
+          const parameters: Types.Mutable<HerdrWireParameters<"command.invoke">> = {
+            commandId,
+            tabId,
+          };
+
+          if (parsed.expectedWorkspaceId !== undefined)
+            parameters.workspaceId = parsed.expectedWorkspaceId;
+
+          yield* transport.request("command.invoke", parameters, options);
         }),
     ),
     invokeInPane: defineHerdrOperation(
@@ -131,21 +130,20 @@ export const makeCommandService = Effect.gen(function* () {
             input,
           );
 
-          yield* transport.request(
-            "command.invoke",
-            {
-              commandId,
-              paneId,
-              ...(parsed.expectedWorkspaceId === undefined
-                ? {}
-                : { workspaceId: parsed.expectedWorkspaceId }),
-              ...(parsed.expectedTabId === undefined ? {} : { tabId: parsed.expectedTabId }),
-              ...(parsed.selection === undefined
-                ? {}
-                : { selection: { paneId, ...parsed.selection } }),
-            },
-            options,
-          );
+          const parameters: Types.Mutable<HerdrWireParameters<"command.invoke">> = {
+            commandId,
+            paneId,
+          };
+
+          if (parsed.expectedWorkspaceId !== undefined)
+            parameters.workspaceId = parsed.expectedWorkspaceId;
+
+          if (parsed.expectedTabId !== undefined) parameters.tabId = parsed.expectedTabId;
+
+          if (parsed.selection !== undefined)
+            parameters.selection = { paneId, ...parsed.selection };
+
+          yield* transport.request("command.invoke", parameters, options);
         }),
     ),
   });

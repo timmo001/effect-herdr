@@ -6,7 +6,7 @@ import { Buffer } from "node:buffer";
 import { createServer, type Socket } from "node:net";
 import { join } from "node:path";
 import { NodeFileSystem, NodeStream } from "@effect/platform-node-shared";
-import { Effect, FileSystem, Queue, Schema, Scope, Stream } from "effect";
+import { Effect, FileSystem, Match, Queue, Schema, Scope, Stream } from "effect";
 import projectionFixture from "./fixtures/endpoint-snapshot-v1.json" with { type: "json" };
 import { resolveHerdrSocketEndpoint } from "./herdr-transport.ts";
 
@@ -125,8 +125,11 @@ function decodeFixtureStrings(bytes: Buffer, count: number): readonly string[] {
   for (let index = 0; index < count; index++) {
     const tag = bytes.readUInt8(offset++);
 
-    const length =
-      tag === 251 ? bytes.readUInt16LE(offset) : tag === 252 ? bytes.readUInt32LE(offset) : tag;
+    const length = Match.value(tag).pipe(
+      Match.when(251, () => bytes.readUInt16LE(offset)),
+      Match.when(252, () => bytes.readUInt32LE(offset)),
+      Match.orElse(() => tag),
+    );
 
     if (tag === 251) offset += 2;
 

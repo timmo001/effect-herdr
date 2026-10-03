@@ -3,7 +3,7 @@
  *
  * @since 0.8.2
  */
-import { Context, Effect, Layer, Option, Schema } from "effect";
+import { Context, Effect, Layer, Option, Schema, type Types } from "effect";
 import {
   HerdrKeySequence,
   type HerdrKeySequence as HerdrKeySequenceValue,
@@ -59,7 +59,7 @@ import {
   PaneZoomResult,
 } from "./herdr-models.ts";
 import { decodeHerdrInput, decodeHerdrWire } from "./herdr-schema-boundary.ts";
-import { makePaneInteraction, type IPaneInteraction } from "./pane-interaction.ts";
+import { paneInteraction, type IPaneInteraction } from "./pane-interaction.ts";
 import { defineHerdrOperation } from "./herdr-effect-operation.ts";
 import { encodePaneReadParameters } from "./herdr-wire-encoder.ts";
 import {
@@ -67,6 +67,7 @@ import {
   herdrTransportLayer,
   type HerdrTransportRequestError,
   type HerdrTransportRequestOptionsEncoded,
+  type HerdrWireParameters,
 } from "./herdr-transport.ts";
 
 const parsePane = Schema.decodeUnknownEffect(Pane);
@@ -340,7 +341,7 @@ export const makePaneService = Effect.gen(function* () {
   );
 
   return PaneService.of({
-    ...makePaneInteraction(transport),
+    ...(yield* paneInteraction),
     split: defineHerdrOperation("PaneService.split", (targetPaneId, input, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.split", parsePaneSplitInput, input);
@@ -701,21 +702,20 @@ export const makePaneService = Effect.gen(function* () {
           input,
         );
 
-        yield* transport.request(
-          "pane.report_agent",
-          {
-            paneId: id,
-            source: parsed.source,
-            agent: parsed.agent,
-            state: parsed.state,
-            message: Option.getOrNull(parsed.message),
-            seq: Option.getOrNull(parsed.sequence),
-            agentSessionId: Option.getOrNull(parsed.sessionId),
-            agentSessionPath: Option.getOrNull(parsed.sessionPath),
-            ...(Option.isSome(parsed.resumeArgv) ? { resumeArgv: parsed.resumeArgv.value } : {}),
-          },
-          options,
-        );
+        const parameters: Types.Mutable<HerdrWireParameters<"pane.report_agent">> = {
+          paneId: id,
+          source: parsed.source,
+          agent: parsed.agent,
+          state: parsed.state,
+          message: Option.getOrNull(parsed.message),
+          seq: Option.getOrNull(parsed.sequence),
+          agentSessionId: Option.getOrNull(parsed.sessionId),
+          agentSessionPath: Option.getOrNull(parsed.sessionPath),
+        };
+
+        if (Option.isSome(parsed.resumeArgv)) parameters.resumeArgv = parsed.resumeArgv.value;
+
+        yield* transport.request("pane.report_agent", parameters, options);
       }),
     ),
     reportAgentSession: defineHerdrOperation(
@@ -728,20 +728,19 @@ export const makePaneService = Effect.gen(function* () {
             input,
           );
 
-          yield* transport.request(
-            "pane.report_agent_session",
-            {
-              paneId: id,
-              source: parsed.source,
-              agent: parsed.agent,
-              seq: Option.getOrNull(parsed.sequence),
-              sessionStartSource: Option.getOrNull(parsed.sessionStartSource),
-              agentSessionId: Option.getOrNull(parsed.sessionId),
-              agentSessionPath: Option.getOrNull(parsed.sessionPath),
-              ...(Option.isSome(parsed.resumeArgv) ? { resumeArgv: parsed.resumeArgv.value } : {}),
-            },
-            options,
-          );
+          const parameters: Types.Mutable<HerdrWireParameters<"pane.report_agent_session">> = {
+            paneId: id,
+            source: parsed.source,
+            agent: parsed.agent,
+            seq: Option.getOrNull(parsed.sequence),
+            sessionStartSource: Option.getOrNull(parsed.sessionStartSource),
+            agentSessionId: Option.getOrNull(parsed.sessionId),
+            agentSessionPath: Option.getOrNull(parsed.sessionPath),
+          };
+
+          if (Option.isSome(parsed.resumeArgv)) parameters.resumeArgv = parsed.resumeArgv.value;
+
+          yield* transport.request("pane.report_agent_session", parameters, options);
         }),
     ),
     reportMetadata: defineHerdrOperation("PaneService.reportMetadata", (id, input, options = {}) =>

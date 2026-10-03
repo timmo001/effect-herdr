@@ -56,6 +56,7 @@ const parseSubscriptionEvent = ajv.compile<SubscriptionEventEnvelope>({
  * @since 0.8.2
  */
 export function parseHerdrWireResponse(
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This is the I/O boundary that validates raw JSON.
   value: unknown,
   requestId: string,
 ): SuccessResponse | ErrorResponse {
@@ -78,6 +79,7 @@ export function isHerdrWireErrorResponse(value: unknown): value is ErrorResponse
  * @since 0.8.2
  */
 export function parseHerdrWireEvent(
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This is the I/O boundary that validates raw JSON.
   value: unknown,
   requestId: string,
 ): EventEnvelope | SubscriptionEventEnvelope {

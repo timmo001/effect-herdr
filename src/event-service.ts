@@ -8,6 +8,7 @@
 import {
   Clock,
   Context,
+  Data,
   Effect,
   Exit,
   Layer,
@@ -45,7 +46,7 @@ import {
 import { defineHerdrOperation } from "./herdr-effect-operation.ts";
 import {
   type HerdrSocketLineBuffer,
-  makeHerdrSocketLineBuffer,
+  emptyHerdrSocketLineBuffer,
   splitHerdrSocketLines,
 } from "./herdr-socket-lines.ts";
 import {
@@ -326,8 +327,12 @@ function decodeEventLine(
   );
 }
 
-type HerdrEventStreamInput =
-  { readonly _tag: "Bytes"; readonly value: Uint8Array } | { readonly _tag: "End" };
+type HerdrEventStreamInput = Data.TaggedEnum<{
+  Bytes: { readonly value: Uint8Array };
+  End: {};
+}>;
+
+const HerdrEventStreamInput = Data.taggedEnum<HerdrEventStreamInput>();
 
 function decodeHerdrEventStream<const Type extends EventSubscriptionSpec["type"]>(
   bytes: Stream.Stream<Uint8Array, HerdrTransportError>,
@@ -335,12 +340,12 @@ function decodeHerdrEventStream<const Type extends EventSubscriptionSpec["type"]
   selectedTypes: readonly Type[],
 ): Stream.Stream<EventForSubscription<{ type: Type }>, EventOperationError> {
   const inputs: Stream.Stream<HerdrEventStreamInput, HerdrTransportError> = bytes.pipe(
-    Stream.map((value) => ({ _tag: "Bytes", value }) as const),
-    Stream.concat(Stream.succeed({ _tag: "End" } as const)),
+    Stream.map((value) => HerdrEventStreamInput.Bytes({ value })),
+    Stream.concat(Stream.succeed(HerdrEventStreamInput.End())),
   );
 
   return inputs.pipe(
-    Stream.mapAccumArray(makeHerdrSocketLineBuffer, (state, input) =>
+    Stream.mapAccumArray(emptyHerdrSocketLineBuffer, (state, input) =>
       parseHerdrEventChunks(state, input, requestId, selectedTypes),
     ),
     Stream.mapEffect((decoded) =>
@@ -372,7 +377,7 @@ function parseHerdrEventChunks<const Type extends EventSubscriptionSpec["type"]>
   >[] = [];
 
   for (const input of inputs) {
-    if (input._tag === "End") {
+    if (HerdrEventStreamInput.$is("End")(input)) {
       if (state.byteLength > 0) {
         decodedEvents.push(
           Result.fail(
@@ -386,7 +391,7 @@ function parseHerdrEventChunks<const Type extends EventSubscriptionSpec["type"]>
         );
       }
 
-      return [makeHerdrSocketLineBuffer(), decodedEvents];
+      return [emptyHerdrSocketLineBuffer(), decodedEvents];
     }
 
     let remaining: readonly Uint8Array[] = [input.value];
@@ -398,7 +403,7 @@ function parseHerdrEventChunks<const Type extends EventSubscriptionSpec["type"]>
       if (Result.isFailure(split)) {
         decodedEvents.push(Result.fail(split.failure));
 
-        return [makeHerdrSocketLineBuffer(), decodedEvents];
+        return [emptyHerdrSocketLineBuffer(), decodedEvents];
       }
 
       state = split.success.buffer;
@@ -411,7 +416,7 @@ function parseHerdrEventChunks<const Type extends EventSubscriptionSpec["type"]>
         if (Result.isFailure(decoded)) {
           decodedEvents.push(Result.fail(decoded.failure));
 
-          return [makeHerdrSocketLineBuffer(), decodedEvents];
+          return [emptyHerdrSocketLineBuffer(), decodedEvents];
         }
 
         if (isEventForSubscriptions(decoded.success, selectedTypes)) {
