@@ -2,7 +2,8 @@
 
 Use this document only when evaluating parser-API lint, complexity policy, or unused-export tooling.
 These are proposals, not installed rules. [Coding standards](coding-standards.md) owns current
-engineering policy; `vite.config.ts` and installed Vite+ plugin entrypoints own actual enforcement.
+engineering policy; [oxlint.config.ts](../oxlint.config.ts) and the shared `@timmo001/oxlint-rules`
+preset own actual enforcement.
 
 ## Narrow parser API candidate
 

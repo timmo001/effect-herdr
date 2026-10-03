@@ -2,7 +2,7 @@
 
 These standards apply to the Effect-native Node SDK under `src/`, its `.mjs` tooling, and its
 fixture-based tests. This repository is one package: `src/index.ts` is the public entrypoint,
-`schema/herdr-api.schema.json` owns the wire contract, and generated snake-case types stay inside
+`src/schema/herdr-api.schema.json` owns the wire contract, and generated snake-case types stay inside
 wire adapters. Read [architecture](architecture.md) before changing behavior and use
 [agent workflow](agent-workflow.md) to find the owning implementation and focused verification.
 
@@ -143,9 +143,10 @@ revision.
 
 ## Cohesion and complexity
 
-Use the repository's installed Vite+ lint configuration as the enforcement authority. This SDK has
-no documented project-specific numeric complexity ceiling or installed custom anti-slop plugin.
-Do not copy thresholds or rule catalogs from another repository.
+Use the repository's [Oxlint configuration](../oxlint.config.ts), which applies the shared
+`@timmo001/oxlint-rules` Effect preset, as the enforcement authority. This SDK has no
+project-specific numeric complexity ceiling. Suppress a rule only on the affected line, with a
+reason, when the rule misreads a deliberate pattern.
 
 Reduce complexity by extracting cohesive domain, protocol, lifecycle, or resource responsibilities.
 An extraction must preserve precise input, success, error, and Effect requirement types plus effect

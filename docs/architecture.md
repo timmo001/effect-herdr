@@ -77,9 +77,7 @@ remain authoritative. No deprecated workspace input alias or alternate legacy cr
 ## Observability
 
 Service and transport boundaries emit native Effect spans without installing an exporter.
-Opt-in [development tracing](local-tracing.md) supplies a scoped exporter at CLI/test execution
-roots, closes product resources before export, and propagates subprocess parents explicitly.
-The full outgoing payload is sanitized; telemetry delivery never replaces the product outcome.
+Consumers supply any exporter; telemetry delivery never replaces the product outcome.
 Shared compatibility checks are independent roots linked by successful waiters. Stream summaries
 belong to the resource lifetime, not merely the acquisition call.
 

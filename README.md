@@ -730,42 +730,36 @@ npx skills add timmo001/effect-herdr
 
 Start with [AGENTS.md](AGENTS.md), the [architecture](docs/architecture.md), and the
 [agent workflow](docs/agent-workflow.md) for task-to-file/test navigation, learning routes,
-verification safety, and subagent handoffs. [package.json](package.json) is the command source of
-truth. [OpenCode references](opencode.json) provide read-only upstream source for agents. These
-follow branches and may differ from installed dependencies; production code imports installed
-packages, never reference source.
+verification, and subagent handoffs. [OpenCode references](opencode.json) provide read-only
+upstream source for agents; production code imports installed packages, never reference source.
 
-With dependencies already installed, run from the repository root:
+Use the tool versions pinned in [mise.toml](mise.toml) and Bun for dependencies.
 
 ```sh
-bun install --frozen-lockfile
-bun run doctor
-bun run verify:quick
-./node_modules/.bin/vitest run src/herdr-sdk.test.ts
+mise run install
 mise run check
 mise run build
 ```
 
-Quick verification checks formatting, lint, types, public docs, and examples. Full verification
-adds generated drift, runtime suites, and an isolated package consumer. See the
-[workflow command table](docs/agent-workflow.md#verification-commands) for focused checks and
-`bun run lab --list` for fixture-only executable learning recipes. For opt-in OpenTelemetry
-export, a loopback viewer, and agent-readable trace queries, follow
-[local tracing](docs/local-tracing.md). No SDK import starts telemetry or a viewer.
+`mise run check` lints with the shared `@timmo001/oxlint-rules` preset, typechecks source and
+`.tst.ts` inference contracts, runs the Vitest suites and checks Prettier formatting. Tests use
+isolated local fixtures, never live Herdr control. Live [examples](examples/README.md) have
+explicit side effects and are not verification commands.
 
-For checks that bypass the package manager, use `node scripts/sdk-doctor.mjs` and `node scripts/sdk-verify.mjs quick` (or `full` / `generated`).
+`mise run generate` rewrites the private wire contracts in `src/generated` from
+`src/schema/herdr-api.schema.json`; `mise run generate:check` fails when they drift. Generated wire
+contracts remain private; [src/index.ts](src/index.ts) owns the public entrypoint.
 
-Tests use isolated local fixtures, never live Herdr control.
-Runtime tests do not check `.tst.ts` inference contracts;
-those require typechecking. Live [examples](examples/README.md) have explicit side effects and
-are not verification commands.
+## Releases
 
-`mise run check` (`bun run check`) runs full verification without fixing files.
-Keep writing commands separate from shared-checkout verification: `bun run generate` rewrites
-private wire contracts from `schema/herdr-api.schema.json`, and `bun run build` regenerates before
-producing package output. Direct Vite+ formatting without `--check` and fixing with `--fix` also
-write files. Generated wire contracts
-remain private; [src/index.ts](src/index.ts) owns the public entrypoint.
+To inspect the package locally, run `mise exec -- npm pack --dry-run`; the pack hook builds
+`dist/`. The package includes the ESM build, declarations, source, README, licence and package
+metadata.
+
+For a release, set the package version in `package.json` and `jsr.json`, keep `bun.lock` in sync,
+and pass `mise run check` and `mise run build`. Commit and push the reviewed version, then publish
+a GitHub release with a tag matching the version exactly. The release workflow publishes to npm
+with provenance and to JSR using the shared `timmo001/workflows` publishers.
 
 ## License
 

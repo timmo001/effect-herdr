@@ -15,11 +15,6 @@
       "repository": "dmmulroy/herdr-ts-sdk",
       "branch": "main",
       "description": "Use for upstream SDK changes, public API conventions, lifecycle tests and compatibility when maintaining this fork or preparing an upstream contribution."
-    },
-    "vite-plus": {
-      "repository": "voidzero-dev/vite-plus",
-      "branch": "main",
-      "description": "Use for Vite Plus configuration, bundled Oxlint and Oxfmt, Vitest, packaging and toolchain upgrades. Preserve the installed bundle's dependency contract and verify branch examples against its installed exports."
     }
   }
 }

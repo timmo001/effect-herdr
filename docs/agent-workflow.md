@@ -14,20 +14,14 @@ then follow its imports and callers. Runtime tests exercise isolated local fixtu
 | Public entrypoint, root composition                  | [index](../src/index.ts), [SDK](../src/herdr-sdk.ts)                                                                             | [SDK runtime](../src/herdr-sdk.test.ts), [SDK inference](../src/herdr-sdk.tst.ts), [Layer requirements](../src/herdr-layers.tst.ts) |
 | Config selection, deadlines, platform paths          | [config](../src/herdr-config.ts)                                                                                                 | [config tests](../src/herdr-config.test.ts)                                                                                         |
 | Public input/domain invariants                       | [domain](../src/herdr-domain.ts), [models](../src/herdr-models.ts), [schema boundary](../src/herdr-schema-boundary.ts)           | [input boundaries](../src/herdr-input-boundaries.test.ts), [domain behavior](../src/herdr-domain.test.ts)                           |
-| Wire parameters, opaque records, recursive inputs    | [encoder](../src/herdr-wire-encoder.ts), [schema](../schema/herdr-api.schema.json)                                               | [encoder runtime](../src/herdr-wire-encoder.test.ts), [encoder inference](../src/herdr-wire-encoder.tst.ts)                         |
+| Wire parameters, opaque records, recursive inputs    | [encoder](../src/herdr-wire-encoder.ts), [schema](../src/schema/herdr-api.schema.json)                                           | [encoder runtime](../src/herdr-wire-encoder.test.ts), [encoder inference](../src/herdr-wire-encoder.tst.ts)                         |
 | Correlation, framing, compatibility, cleanup         | [transport](../src/herdr-transport.ts), [socket lines](../src/herdr-socket-lines.ts), [wire parser](../src/herdr-wire-parser.ts) | [transport tests](../src/herdr-transport.test.ts)                                                                                   |
 | Live event acceptance, narrowing, bootstrap          | [event service](../src/event-service.ts)                                                                                         | [event tests](../src/event-service.test.ts), [SDK inference](../src/herdr-sdk.tst.ts)                                               |
 | Namespace dispatch / result variants                 | Service owner in [parity ledger](sdk-v1-parity.md)                                                                               | [dispatch tests](../src/herdr-full-parity.test.ts), plus the ledger's focused suite                                                 |
 | Typed failures / safe diagnostics                    | [errors](../src/herdr-errors.ts), [error policy](errors.md)                                                                      | [error tests](../src/herdr-errors.test.ts), owning boundary suite                                                                   |
 | Fixture synchronization / bounded metadata timelines | [test server](../src/herdr-test-server.ts), [wire fixtures](../src/herdr-wire-fixtures.ts)                                       | [fixture tests](../src/herdr-test-server.test.ts), plus consumers of the changed behavior                                           |
 | Platform paths / repeated lifecycle schedules        | [config](../src/herdr-config.ts), [transport](../src/herdr-transport.ts)                                                         | [platform tests](../src/herdr-platform.test.ts), [stress tests](../src/herdr-stress.test.ts)                                        |
-| Generation, packaging, executable docs               | [generator](../scripts/generate-wire-types.mjs), [package](../package.json), [examples](../examples/README.md)                   | [tooling tests](../scripts/sdk-tooling.test.ts)                                                                                     |
-
-For telemetry changes, start with [local tracing](local-tracing.md):
-[execution/export](../scripts/sdk-telemetry.mjs), [test boundary](../src/herdr-test-runtime.ts),
-[query CLI](../scripts/sdk-trace-query.mjs), and their adjacent tests. Exported transport and stream
-contracts live in [transport tracing tests](../src/herdr-transport-tracing.test.ts) and
-[stream tracing tests](../src/herdr-stream-tracing.test.ts), alongside the ordinary behavior suites.
+| Generation, packaging, executable docs               | [generator](../scripts/generate-wire-types.mjs), [package](../package.json), [examples](../examples/README.md)                   | `mise run generate:check`, `bun run typecheck`, `mise run build`                                                                    |
 
 ## Learning through executable behavior
 
@@ -37,10 +31,7 @@ change one assertion or fixture input deliberately, observe the failure, and res
 experiment into a justified regression test. Keep temporary experiments out of tracked files.
 
 The [learning tests](../src/herdr-learning.test.ts) own assertion-bearing recipes and hypothesis
-comments. The [lab runner](../scripts/sdk-lab.mjs) derives its catalog from those declarations;
-it accepts only a listed scenario, uses local fixtures, bounds execution, and cleans temporary output.
-Run `bun run lab --list`, then `bun run lab --scenario <exact-id>`.
-It is not an arbitrary code, shell, or live-socket runner.
+comments. Run one with `./node_modules/.bin/vitest run src/herdr-learning.test.ts -t "<name>"`.
 
 Other useful routes (commands run from the repository root):
 
@@ -51,37 +42,26 @@ Other useful routes (commands run from the repository root):
 - Exact upstream Effect behavior: find the installed version in the package manifest, then inspect
   the Effect [OpenCode reference](../opencode.json) and its agent guidance; never import or edit it.
   Branch references may be newer. Confirm exports/signatures against the installed package.
-- Trace-driven experiments: follow [local tracing](local-tracing.md) to run a lab with `--trace`,
-  query its emitted run ID, and inspect phase timing, outcome, cleanup, and linked shared work.
 
 The [examples catalog](../examples/README.md) is for explicitly authorized application use.
 Examples may send terminal input, launch agents, or change live state; they are not test fixtures.
 
 ## Verification commands
 
-Run from the repository root with installed dependencies. These checks do not rewrite tracked
-source/generated files or contact live Herdr. Temporary build/fixture output is scope-owned.
-To bypass the package manager, run `node scripts/sdk-doctor.mjs` or
-`node scripts/sdk-verify.mjs quick` (also accepts `full` or `generated`).
+Run from the repository root with installed dependencies. Apart from `generate:check`, these checks
+do not rewrite tracked files, and none contact live Herdr.
 
-| Command                   | Evidence and limits                                                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `bun run doctor`          | Reports runtime/tool/dependency/protocol alignment and an isolated socket bind/close probe; no installs, repairs, or independent upstream commit verification.                             |
-| `bun run verify:quick`    | Format check, lint, types (including `.tst.ts` and tooling JS), public JSDoc, and example compilation; no runtime, generation drift, or package check. `bun run check` is full, not quick. |
-| `bun run verify`          | Quick stages plus generated drift, runtime suites, and isolated package verification. `mise run check` and `bun run check` run the same route.                                             |
-| `bun run test:runtime`    | Runtime Vitest suites, including tooling tests; not a substitute for typechecking.                                                                                                         |
-| `bun run check:generated` | Regenerates into a temporary directory and compares with tracked wire files; reports drift without rewriting them.                                                                         |
-| `bun run check:package`   | Builds/packs an offline temporary consumer and checks runtime imports/declarations using the installed dependency graph; does not prove registry dependency resolution.                    |
-| `bun run test:platform`   | Host platform fixture coverage; a pass on one OS does not prove other operating systems.                                                                                                   |
-| `bun run test:stress`     | Seeded repeated local lifecycle scenarios; reproduction controls live in [stress tests](../src/herdr-stress.test.ts), not a second defaults inventory.                                     |
-| `bun run lab --list`      | Lists executable learning recipes; use `--scenario <exact-id>` for one bounded experiment.                                                                                                 |
+| Command                   | Evidence and limits                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `mise run check`          | Lint, typecheck, runtime tests and format check. `bun run check` runs the same stages.                  |
+| `bun run lint`            | Shared Oxlint rules, including type-aware checks.                                                       |
+| `bun run typecheck`       | Source plus `.tst.ts` inference contracts, tooling and examples. Vitest does not check these.           |
+| `bun run test`            | Runtime Vitest suites, including platform and stress coverage.                                          |
+| `mise run generate:check` | Regenerates `src/generated` and fails on drift. It rewrites the files first, so run it on a clean tree. |
+| `mise run build`          | Emits ESM and declarations into `dist/`.                                                                |
 
-Full verification is broader than a focused pass, not exhaustive scheduler or platform proof.
-[Verification runner](../scripts/sdk-verification-runner.mjs) owns stage selection and deadlines;
-[package scripts](../package.json) own command dispatch. Add `--trace` to a lab, runtime test
-command, or verification run for opt-in local export. `bun run trace:viewer --check` checks the
-separately installed viewer; `bun run trace:list` and `bun run trace:show -- <trace-id>` query it.
-See [local tracing](local-tracing.md) for configuration, safety, and evidence limits.
+A platform pass on one OS does not prove other operating systems. Seeded reproduction controls live
+in the [stress tests](../src/herdr-stress.test.ts), not a second defaults inventory.
 
 ## Verification discipline
 
@@ -89,13 +69,9 @@ See [local tracing](local-tracing.md) for configuration, safety, and evidence li
 2. Run the relevant runtime file with `./node_modules/.bin/vitest run <test-file>`.
 3. Check compile-time `.tst.ts` contracts with the repository typecheck, not Vitest alone.
 4. Select broader commands from [package.json](../package.json) after inspecting what they run.
-   `check` is the non-mutating full route. `generate` rewrites private wire files; `build`
-   regenerates before packaging. Direct Vite+ formatting without `--check` and fixing with `--fix`
-   write files. Do not use writing commands as verification in a shared checkout.
-5. For guide edits, run `./node_modules/.bin/vitest run scripts/agent-context.test.ts`:
-   [context tests](../scripts/agent-context.test.ts) check local inline links and documented package
-   script names in the entrypoint/workflow guides, not historical research or arbitrary Markdown.
-6. Inspect the scoped diff and report evidence separately from untested confidence. A dispatch
+   `check` is the non-mutating full route. `generate`, `format` and `oxlint --fix` write files.
+   Do not use writing commands as verification in a shared checkout.
+5. Inspect the scoped diff and report evidence separately from untested confidence. A dispatch
    pass is not proof of teardown, interruption, resource bounds, platform support, or packaging.
 
 Use explicit local socket paths and bounded fixture waits. Synchronize tests on observed requests,
