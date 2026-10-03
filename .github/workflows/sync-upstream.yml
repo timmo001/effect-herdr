@@ -29,7 +29,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: fork/main
+          ref: main
           fetch-depth: 0
 
       - name: Merge upstream main
@@ -45,7 +45,7 @@ jobs:
           git switch --create "$SYNC_BRANCH"
           if ! git merge --no-edit --no-ff FETCH_HEAD -m "Merge upstream main"; then
             git merge --abort
-            echo "::error::Upstream main conflicts with fork/main. Merge it by hand."
+            echo "::error::Upstream main conflicts with this fork's main. Merge it by hand."
             exit 1
           fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -59,11 +59,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          open_pr=$(gh pr list --head "$SYNC_BRANCH" --base fork/main --state open --json number --jq '.[0].number')
+          open_pr=$(gh pr list --head "$SYNC_BRANCH" --base main --state open --json number --jq '.[0].number')
           if [ -z "$open_pr" ]; then
-            gh pr create --base fork/main --head "$SYNC_BRANCH" \
+            gh pr create --base main --head "$SYNC_BRANCH" \
               --title "Merge upstream main" \
-              --body "Merges the latest [dmmulroy/herdr-ts-sdk](https://github.com/dmmulroy/herdr-ts-sdk) main into fork/main. Review before merging; upstream changes may need adapting to this fork's tooling."
+              --body "Merges the latest [dmmulroy/herdr-ts-sdk](https://github.com/dmmulroy/herdr-ts-sdk) main into this fork's main. Review before merging; upstream changes may need adapting to this fork's tooling."
           fi
           # Pull requests opened with GITHUB_TOKEN do not trigger pull_request workflows.
           gh workflow run ci.yml --ref "$SYNC_BRANCH"
