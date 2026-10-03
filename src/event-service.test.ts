@@ -1,5 +1,5 @@
 import type { Socket } from "node:net";
-import { Deferred, Duration, Effect, Fiber, Result, Stream } from "effect";
+import { Deferred, Duration, Effect, Fiber, Option, Result, Stream } from "effect";
 import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import { HerdrAbsolutePath } from "./herdr-domain.ts";
@@ -16,6 +16,12 @@ import {
   type HerdrTestServer,
 } from "./herdr-test-server.ts";
 import { makeHerdrSuccessResponse } from "./herdr-wire-fixtures.ts";
+
+/** Caller-owned subscription the tests mutate after it has been parsed. */
+type MutableWorkspaceSubscription = { type: "workspace.created" | "workspace.updated" };
+
+/** Caller-owned wait selection the tests mutate after it has been parsed. */
+type MutableWorkspaceMatch = MutableWorkspaceSubscription & { workspaceId: string };
 
 const workspace = {
   workspace_id: "workspace-1",
@@ -71,7 +77,7 @@ test("event subscriptions normalize, filter, and close their scoped socket", (co
 
         expect(event._tag).toBe("Some");
 
-        if (event._tag === "Some") expect(event.value.type).toBe("workspace.created");
+        if (Option.isSome(event)) expect(event.value.type).toBe("workspace.created");
         yield* server.waitFor("close", server.requests.length);
         expect(server.openSocketMethods()).toEqual([]);
       }),
@@ -85,7 +91,7 @@ test.for(["array", "object"] as const)(
       context,
       Effect.scoped(
         Effect.gen(function* () {
-          const specification: { type: "workspace.created" | "workspace.updated" } = {
+          const specification: MutableWorkspaceSubscription = {
             type: "workspace.created",
           };
 
@@ -132,7 +138,7 @@ test.for(["array", "object"] as const)(
           ).toStrictEqual([{ type: "workspace.created" }]);
           expect(event._tag).toBe("Some");
 
-          if (event._tag === "Some") expect(event.value.type).toBe("workspace.created");
+          if (Option.isSome(event)) expect(event.value.type).toBe("workspace.created");
           yield* server.waitFor("close", server.requests.length);
           expect(server.openSocketMethods()).toStrictEqual([]);
         }),
@@ -147,7 +153,7 @@ test.for(["workspace_created", "workspace_updated"] as const)(
       context,
       Effect.scoped(
         Effect.gen(function* () {
-          const match: { type: "workspace.created" | "workspace.updated"; workspaceId: string } = {
+          const match: MutableWorkspaceMatch = {
             type: "workspace.created",
             workspaceId: "workspace-1",
           };
@@ -189,11 +195,10 @@ test.for(["workspace_created", "workspace_updated"] as const)(
           } else {
             expect(Result.isFailure(result)).toBe(true);
 
-            if (Result.isFailure(result))
-              expect(result.failure).toMatchObject({
-                _tag: "HerdrInvalidResponse",
-                reason: "schema_mismatch",
-              });
+            if (Result.isFailure(result)) {
+              expect(result.failure).toBeInstanceOf(HerdrInvalidResponse);
+              expect(result.failure).toMatchObject({ reason: "schema_mismatch" });
+            }
           }
 
           yield* server.waitFor("close", server.requests.length);
@@ -260,7 +265,7 @@ test("accepted live-only subscriptions safely buffer events across snapshot boot
         expect(result.snapshot).toBeDefined();
         expect(result.event._tag).toBe("Some");
 
-        if (result.event._tag === "Some") expect(result.event.value.type).toBe("workspace.created");
+        if (Option.isSome(result.event)) expect(result.event.value.type).toBe("workspace.created");
         const methods = server.requests.map((request) => request.method);
         expect(methods.indexOf("events.subscribe")).toBeLessThan(
           methods.indexOf("session.snapshot"),
@@ -576,7 +581,7 @@ test("event subscriptions decode UTF-8 characters fragmented across socket reads
 
         expect(event._tag).toBe("Some");
 
-        if (event._tag === "Some") expect(event.value.workspace.label).toBe(expectedLabel);
+        if (Option.isSome(event)) expect(event.value.workspace.label).toBe(expectedLabel);
       }),
     ),
   ));
@@ -624,7 +629,8 @@ test.for(["invalid UTF-8", "UTF-8 BOM"])(
             }),
           );
 
-          expect(failure).toMatchObject({ _tag: "HerdrInvalidResponse", reason: "malformed_json" });
+          expect(failure).toBeInstanceOf(HerdrInvalidResponse);
+          expect(failure).toMatchObject({ reason: "malformed_json" });
           yield* server.waitFor("close", server.requests.length);
           expect(server.openSocketMethods()).not.toContain("events.subscribe");
         }),
@@ -714,7 +720,12 @@ test("reusing a cold subscription opens independent sockets without replaying pr
         expect(subscriptionCount).toBe(3);
         expect(
           events
-            .map((event) => (event._tag === "Some" ? event.value.workspace.label : "missing"))
+            .map((event) =>
+              Option.match(event, {
+                onNone: () => "missing",
+                onSome: ({ workspace }) => workspace.label,
+              }),
+            )
             .sort(),
         ).toEqual(["Subscription 1", "Subscription 2", "Subscription 3"]);
       }),
@@ -770,7 +781,8 @@ test.for([
         );
 
         expect(labels).toEqual(["First", "Second"]);
-        expect(failure).toMatchObject({ _tag: "HerdrInvalidResponse", reason });
+        expect(failure).toBeInstanceOf(HerdrInvalidResponse);
+        expect(failure).toMatchObject({ reason });
       }),
     ),
   ),

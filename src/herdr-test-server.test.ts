@@ -1,5 +1,5 @@
 import { NodeFileSystem } from "@effect/platform-node-shared";
-import { Deferred, Effect, Exit, Fiber, FileSystem, Logger } from "effect";
+import { Deferred, Effect, Exit, Fiber, FileSystem, Logger, Match } from "effect";
 import { createConnection, type Socket } from "node:net";
 import { dirname, join } from "node:path";
 import { expect, expectTypeOf, test, type TestContext } from "vitest";
@@ -174,13 +174,14 @@ test.for(["throw", "effect", "parse", "schema", "utf8"] as const)(
 
         const client = yield* connectFixture(server.socketPath);
         client.write(
-          mode === "utf8"
-            ? Buffer.concat([Buffer.from('{"id":"'), Buffer.from([255]), requestBytes.subarray(7)])
-            : mode === "parse"
-              ? "secret-invalid-json\n"
-              : mode === "schema"
-                ? '{"id":"secret-id","method":"secret-method"}\n'
-                : requestBytes,
+          Match.value(mode).pipe(
+            Match.when("utf8", () =>
+              Buffer.concat([Buffer.from('{"id":"'), Buffer.from([255]), requestBytes.subarray(7)]),
+            ),
+            Match.when("parse", () => "secret-invalid-json\n"),
+            Match.when("schema", () => '{"id":"secret-id","method":"secret-method"}\n'),
+            Match.orElse(() => requestBytes),
+          ),
         );
         const failure = yield* Effect.flip(server.waitFor("request", 2));
         expect(failure.message).not.toContain("secret");

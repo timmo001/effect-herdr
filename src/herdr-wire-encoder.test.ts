@@ -42,9 +42,9 @@ test("SDK preserves environment and metadata dictionary keys on the socket", (co
         // Metadata names are protocol-restricted; environment names have no such restriction.
         const tokens = {
           ...Object.fromEntries(
-            dictionaryKeys
-              .filter((key) => /^[A-Za-z0-9_-]{1,32}$/.test(key))
-              .map((key) => [key, "fixture"]),
+            dictionaryKeys.flatMap((key) =>
+              /^[A-Za-z0-9_-]{1,32}$/.test(key) ? [[key, "fixture"] as const] : [],
+            ),
           ),
           deletedToken: null,
         };

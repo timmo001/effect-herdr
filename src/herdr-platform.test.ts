@@ -1,7 +1,13 @@
 import { Duration, Effect, Fiber } from "effect";
 import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
-import { HerdrSdk, herdrSdkLayerFromOptions } from "./index.ts";
+import {
+  HerdrRequestTimeout,
+  HerdrSdk,
+  HerdrServerError,
+  HerdrTransportError,
+  herdrSdkLayerFromOptions,
+} from "./index.ts";
 import { startHerdrTestServer } from "./herdr-test-server.ts";
 import { makeHerdrSuccessResponse } from "./herdr-wire-fixtures.ts";
 import { resolveHerdrSocketEndpoint } from "./herdr-transport.ts";
@@ -31,10 +37,8 @@ test("local platform socket completes public SDK success and server failure with
           const ping = yield* sdk.server.ping();
           expect(ping).toHaveProperty("protocol");
           const failure = yield* sdk.server.reloadConfig().pipe(Effect.flip);
-          expect(failure).toMatchObject({
-            _tag: "HerdrServerError",
-            serverCode: "fixture_rejected",
-          });
+          expect(failure).toBeInstanceOf(HerdrServerError);
+          expect(failure).toMatchObject({ serverCode: "fixture_rejected" });
         }).pipe(Effect.provide(herdrSdkLayerFromOptions({ socketPath: server.socketPath })));
         yield* server.waitFor("close", server.requests.length);
         expect(server.openSocketCount()).toBe(0);
@@ -47,7 +51,8 @@ test("local platform socket completes public SDK success and server failure with
           return yield* sdk.server.ping().pipe(Effect.flip);
         }).pipe(Effect.provide(herdrSdkLayerFromOptions({ socketPath: server.socketPath })));
 
-        expect(closedFailure).toMatchObject({ _tag: "HerdrTransportError", reason: "connect" });
+        expect(closedFailure).toBeInstanceOf(HerdrTransportError);
+        expect(closedFailure).toMatchObject({ reason: "connect" });
       }),
     ),
   ));
@@ -70,7 +75,7 @@ test("local platform socket times out and interrupts established requests withou
             .reloadConfig({ requestTimeout: Duration.millis(50) })
             .pipe(Effect.flip);
 
-          expect(timeout).toMatchObject({ _tag: "HerdrRequestTimeout" });
+          expect(timeout).toBeInstanceOf(HerdrRequestTimeout);
           yield* server.waitFor("close", server.requests.length);
           expect(server.openSocketCount()).toBe(0);
           const nextRequestCount = server.requests.length + 1;

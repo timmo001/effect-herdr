@@ -8,6 +8,7 @@ import {
 } from "./workspace-service.ts";
 
 type Equal<Left, Right> =
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Generic signatures are the strict type-equality technique.
   (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
     ? true
     : false;

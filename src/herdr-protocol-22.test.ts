@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect";
+import { Effect, Match, Option } from "effect";
 import { expect, test } from "vitest";
 import {
   HerdrAbsolutePath,
@@ -8,7 +8,7 @@ import {
   herdrSdkLayerFromOptions,
 } from "./index.ts";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
-import { startHerdrTestServer } from "./herdr-test-server.ts";
+import { type HerdrTestResponse, startHerdrTestServer } from "./herdr-test-server.ts";
 import { makeHerdrSuccessResponse } from "./herdr-wire-fixtures.ts";
 
 test("every protocol-22 API-socket addition dispatches and decodes a successful result", (context) =>
@@ -177,56 +177,55 @@ test("new capabilities, integration states, bounded matches, and optional link r
       Effect.gen(function* () {
         const server = yield* startHerdrTestServer((request) =>
           Effect.succeed(
-            request.method === "ping"
-              ? {
-                  id: request.id,
-                  result: {
-                    type: "pong",
-                    version: "0.9.0",
-                    protocol: 22,
-                    capabilities: {
-                      live_handoff: false,
-                      endpoint_protocol_generation: 1,
-                      surface_interest: true,
-                      health_check: true,
-                    },
+            Match.value(request.method).pipe(
+              Match.withReturnType<HerdrTestResponse>(),
+              Match.when("ping", () => ({
+                id: request.id,
+                result: {
+                  type: "pong",
+                  version: "0.9.0",
+                  protocol: 22,
+                  capabilities: {
+                    live_handoff: false,
+                    endpoint_protocol_generation: 1,
+                    surface_interest: true,
+                    health_check: true,
                   },
-                }
-              : request.method === "integration.list"
-                ? {
-                    id: request.id,
-                    result: {
-                      type: "integration_list",
-                      integrations: (["not_installed", "current", "outdated"] as const).map(
-                        (state) => ({
-                          target: "codex",
-                          label: "Codex",
-                          command: "codex",
-                          available: true,
-                          state,
-                        }),
-                      ),
-                    },
-                  }
-                : request.method === "pane.copy_search"
-                  ? {
-                      id: request.id,
-                      result: {
-                        type: "pane_copy_search",
-                        pane_id: "pane",
-                        content_revision: 6,
-                        matches: [{ start: { row: 0, col: 0 }, end: { row: 0, col: 2 } }],
-                        total: 2000,
-                        current: 0,
-                        current_global: 100,
-                      },
-                    }
-                  : request.method === "pane.link.activate"
-                    ? {
-                        id: request.id,
-                        result: { type: "pane_link_activated", handled: false },
-                      }
-                    : makeHerdrSuccessResponse(request),
+                },
+              })),
+              Match.when("integration.list", () => ({
+                id: request.id,
+                result: {
+                  type: "integration_list",
+                  integrations: (["not_installed", "current", "outdated"] as const).map(
+                    (state) => ({
+                      target: "codex",
+                      label: "Codex",
+                      command: "codex",
+                      available: true,
+                      state,
+                    }),
+                  ),
+                },
+              })),
+              Match.when("pane.copy_search", () => ({
+                id: request.id,
+                result: {
+                  type: "pane_copy_search",
+                  pane_id: "pane",
+                  content_revision: 6,
+                  matches: [{ start: { row: 0, col: 0 }, end: { row: 0, col: 2 } }],
+                  total: 2000,
+                  current: 0,
+                  current_global: 100,
+                },
+              })),
+              Match.when("pane.link.activate", () => ({
+                id: request.id,
+                result: { type: "pane_link_activated", handled: false },
+              })),
+              Match.orElse(() => makeHerdrSuccessResponse(request)),
+            ),
           ),
         );
 
@@ -309,21 +308,22 @@ test.for([
           const sdk = yield* HerdrSdk;
           const pane = sdk.ids.pane("pane");
 
-          const operation =
-            code === "stale_content"
-              ? sdk.panes.selection.read(pane, {
-                  anchor: { row: 0, col: 0 },
-                  cursor: { row: 1, col: 1 },
-                  contentRevision: 8,
-                })
-              : code === "stale_announcement"
-                ? sdk.productAnnouncements.dismiss({ version: "0.9.0", id: "announcement" })
-                : code === "stale_release_notes"
-                  ? sdk.releaseNotes.dismiss({ version: "0.9.0" })
-                  : sdk.agents.prompt(
-                      { paneId: pane },
-                      { text: "fixture", wait: { until: ["idle"] } },
-                    );
+          const operation = Match.value(code).pipe(
+            Match.when("stale_content", () =>
+              sdk.panes.selection.read(pane, {
+                anchor: { row: 0, col: 0 },
+                cursor: { row: 1, col: 1 },
+                contentRevision: 8,
+              }),
+            ),
+            Match.when("stale_announcement", () =>
+              sdk.productAnnouncements.dismiss({ version: "0.9.0", id: "announcement" }),
+            ),
+            Match.when("stale_release_notes", () => sdk.releaseNotes.dismiss({ version: "0.9.0" })),
+            Match.orElse(() =>
+              sdk.agents.prompt({ paneId: pane }, { text: "fixture", wait: { until: ["idle"] } }),
+            ),
+          );
 
           const error = yield* operation.pipe(Effect.flip);
           expect(error).toBeInstanceOf(HerdrServerError);

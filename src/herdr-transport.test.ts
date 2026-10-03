@@ -48,11 +48,8 @@ test("transport classifies malformed, oversized, server, and timeout failures", 
         }),
       );
 
-      expect(malformed).toMatchObject({
-        _tag: "HerdrInvalidResponse",
-        reason: "malformed_json",
-        requestId: "malformed",
-      });
+      expect(malformed).toBeInstanceOf(HerdrInvalidResponse);
+      expect(malformed).toMatchObject({ reason: "malformed_json", requestId: "malformed" });
 
       const oversizedServer = yield* startHerdrTestServer(() =>
         Effect.succeed(new HerdrRawTestResponse(`${"x".repeat(1024 * 1024 + 1)}\n`)),
@@ -67,11 +64,8 @@ test("transport classifies malformed, oversized, server, and timeout failures", 
         }),
       );
 
-      expect(oversized).toMatchObject({
-        _tag: "HerdrInvalidResponse",
-        reason: "oversized_frame",
-        requestId: "oversized",
-      });
+      expect(oversized).toBeInstanceOf(HerdrInvalidResponse);
+      expect(oversized).toMatchObject({ reason: "oversized_frame", requestId: "oversized" });
 
       const errorServer = yield* startHerdrTestServer((request) =>
         Effect.succeed(
@@ -298,7 +292,8 @@ test("transport rejects invalid UTF-8 instead of accepting replacement character
         }),
       );
 
-      expect(failure).toMatchObject({ _tag: "HerdrInvalidResponse", reason: "malformed_json" });
+      expect(failure).toBeInstanceOf(HerdrInvalidResponse);
+      expect(failure).toMatchObject({ reason: "malformed_json" });
     }),
   ));
 
@@ -475,11 +470,8 @@ test.for(["request", "stream"] as const)(
                     )
               ).pipe(Effect.flip);
 
-              expect(failure).toMatchObject({
-                _tag: "HerdrRequestTimeout",
-                requestId: "deadline",
-                timeoutMilliseconds: 30,
-              });
+              expect(failure).toBeInstanceOf(HerdrRequestTimeout);
+              expect(failure).toMatchObject({ requestId: "deadline", timeoutMilliseconds: 30 });
               expect(server.requests.map((request) => request.method)).toEqual(["ping"]);
               yield* server.waitFor("close");
               expect(server.openSocketCount()).toBe(0);
@@ -569,7 +561,8 @@ test("one request timing out does not cancel another caller's shared compatibili
         }),
       );
 
-      expect(results[0]).toMatchObject({ _tag: "HerdrRequestTimeout", requestId: "short" });
+      expect(results[0]).toBeInstanceOf(HerdrRequestTimeout);
+      expect(results[0]).toMatchObject({ requestId: "short" });
       expect(results[1]).toMatchObject({ requestId: "long", result: { type: "ok" } });
       expect(server.requests.filter((request) => request.method === "ping")).toHaveLength(1);
     }),

@@ -28,7 +28,7 @@ sdk.workspaces.createFromWorkspace(workspace, { label: "review" });
 sdk.workspaces.create({ cwd: "/repository" });
 
 // @ts-expect-error No public directory discriminator is required or accepted.
-sdk.workspaces.create({ directory: { _tag: "ServerDefault" } });
+sdk.workspaces.create({ directory: { _tag: "ServerDefault" } }); // oxlint-disable-line anti-slop-effect/no-manual-tagged-construction -- Asserts the old tagged input is rejected.
 
 // @ts-expect-error Source workspace is positional on createFromWorkspace.
 sdk.workspaces.create({ sourceWorkspaceId: workspace });

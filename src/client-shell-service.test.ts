@@ -9,6 +9,7 @@ import {
   HerdrEndpointRequestTimeout,
   HerdrEndpointStaleReference,
   HerdrEndpointUnsupportedMethod,
+  HerdrServerError,
   herdrSdkLayerFromOptions,
 } from "./index.ts";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
@@ -250,11 +251,11 @@ test("endpoint response chunks correlate independently and server rejections do 
                     { concurrency: 2 },
                   );
 
-                  for (const error of errors)
-                    expect(error).toMatchObject({
-                      _tag: "HerdrServerError",
-                      serverCode: "stale_release_notes",
-                    });
+                  for (const error of errors) {
+                    expect(error).toBeInstanceOf(HerdrServerError);
+                    expect(error).toMatchObject({ serverCode: "stale_release_notes" });
+                  }
+
                   expect(yield* shell.connectionState()).toBe("ready");
                 }),
             );
