@@ -30,22 +30,22 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Check
-        # Hosted runners need headroom above the local 120s per-stage default.
-        env:
-          HERDR_VERIFY_TIMEOUT_MS: "300000"
         run: mise run check
+
+      - name: Check generated wire types
+        run: mise run generate:check
 
       - name: Build
         run: mise run build
 
   actionlint:
-    uses: timmo001/workflows/.github/workflows/lint-actionlint.yml@0f94251168336b74fadf271a955d24d1de4de343 # 20260927.1
+    uses: timmo001/workflows/.github/workflows/lint-actionlint.yml@a76c7b0547b8e4c16fdbbdb9d2ba3cbab144b168 # 20261002.1
 
   markdownlint:
-    uses: timmo001/workflows/.github/workflows/lint-markdownlint.yml@0f94251168336b74fadf271a955d24d1de4de343 # 20260927.1
+    uses: timmo001/workflows/.github/workflows/lint-markdownlint.yml@a76c7b0547b8e4c16fdbbdb9d2ba3cbab144b168 # 20261002.1
 
   yamllint:
-    uses: timmo001/workflows/.github/workflows/lint-yamllint.yml@0f94251168336b74fadf271a955d24d1de4de343 # 20260927.1
+    uses: timmo001/workflows/.github/workflows/lint-yamllint.yml@a76c7b0547b8e4c16fdbbdb9d2ba3cbab144b168 # 20261002.1
 
   jsonlint:
-    uses: timmo001/workflows/.github/workflows/lint-jsonlint.yml@0f94251168336b74fadf271a955d24d1de4de343 # 20260927.1
+    uses: timmo001/workflows/.github/workflows/lint-jsonlint.yml@a76c7b0547b8e4c16fdbbdb9d2ba3cbab144b168 # 20261002.1

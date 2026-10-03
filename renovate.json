@@ -1,27 +1,5 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>timmo001/renovate-config"],
-  "forkProcessing": "enabled",
-  "baseBranchPatterns": ["fork/main"],
-  "platformAutomerge": false,
-  "packageRules": [
-    {
-      "description": "Leave non-Effect dependencies to upstream.",
-      "matchPackageNames": ["*"],
-      "enabled": false
-    },
-    {
-      "description": "Update the Effect runtime and integrations together.",
-      "matchFileNames": ["package.json"],
-      "matchPackageNames": ["effect", "@effect/platform-*", "@effect/vitest"],
-      "enabled": true,
-      "groupName": "Effect",
-      "groupSlug": "effect"
-    },
-    {
-      "description": "Merge passing non-major maintenance updates.",
-      "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
-      "automerge": true
-    }
-  ]
+  "forkProcessing": "enabled"
 }

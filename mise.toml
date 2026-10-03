@@ -9,7 +9,7 @@ description = "Install dependencies"
 run = "bun install"
 
 [tasks.lint]
-description = "Lint source with the Vite+ Oxlint config"
+description = "Lint source with the shared Oxlint rules"
 run = "bun run lint"
 
 [tasks.typecheck]
@@ -25,13 +25,22 @@ description = "Check formatting without writing"
 run = "bun run format:check"
 
 [tasks.check]
-description = "Format check, lint, types, public docs, examples, generated drift, runtime tests and package smoke"
-run = "bun run check"
+description = "Lint, type-check, test and verify formatting"
+depends = ["lint", "typecheck", "test", "format:check"]
 
 [tasks.test]
-description = "Run SDK runtime and tooling tests"
+description = "Run SDK contract tests"
 run = "bun run test"
 
 [tasks.build]
-description = "Regenerate wire types and build ESM and declarations into dist"
+description = "Build ESM and TypeScript declarations into dist"
 run = "bun run build"
+
+[tasks.generate]
+description = "Regenerate wire types from the bundled Herdr schema"
+run = "bun run generate"
+
+[tasks."generate:check"]
+description = "Fail when generated wire types differ from the bundled Herdr schema"
+depends = ["generate"]
+run = 'git diff --exit-code -- src/generated && test -z "$(git status --porcelain -- src/generated)"'
