@@ -34,17 +34,21 @@ test("metadata token names and counts reject invalid keys rather than dropping t
           const patch = Object.fromEntries([[key, null]]);
           const decoded = parse(patch);
           expect(Option.isSome(decoded)).toBe(/^[A-Za-z0-9_-]{1,32}$/.test(key));
+
           if (Option.isSome(decoded)) expect(decoded.value).toStrictEqual(patch);
         }),
       { seed: 2101, runs: 200 },
     ),
   );
+
   for (const count of [0, 1, 16, 17]) {
     const patch = Object.fromEntries(
       Array.from({ length: count }, (_, index) => [`token_${index}`, "value"]),
     );
+
     expect(Option.isSome(parse(patch))).toBe(count <= 16);
   }
+
   for (const key of ["__proto__", "constructor", "toString", "A".repeat(32)]) {
     const patch = Object.fromEntries([[key, null]]);
     expect(Schema.decodeUnknownSync(HerdrMetadataTokenPatch)(patch)).toStrictEqual(patch);
@@ -63,13 +67,16 @@ test("state labels accept any subset of known statuses and reject unknown names"
       (included) =>
         Effect.sync(() => {
           const selected = statuses.filter((_, index) => included[index]);
+
           const stateLabels = Object.fromEntries(
             selected.map((status) => [status, "Custom label"]),
           );
+
           const parsed = Schema.decodeUnknownSync(PaneMetadataReportInput)({
             source: "fixture",
             stateLabels,
           });
+
           expect(Option.getOrThrow(parsed.stateLabels)).toStrictEqual(stateLabels);
           expect(Schema.encodeSync(PaneMetadataReportInput)(parsed)).toStrictEqual({
             source: "fixture",
@@ -79,6 +86,7 @@ test("state labels accept any subset of known statuses and reject unknown names"
       { seed: 2102, runs: 40 },
     ),
   );
+
   for (const key of ["paused", "workng", "Working", "", "__proto__"]) {
     expect(
       Option.isNone(
@@ -100,18 +108,21 @@ test("agent targets normalize kind and reject competing selectors even when one 
     kind: "agent",
     name: "worker",
   });
+
   for (const input of [{ paneId: "pane-1" }, { kind: "pane", paneId: "pane-1" }]) {
     expect(Schema.decodeUnknownSync(AgentTarget)(input)).toStrictEqual({
       kind: "pane",
       paneId: "pane-1",
     });
   }
+
   for (const input of [{ name: "worker" }, { kind: "agent", name: "worker" }]) {
     expect(Schema.decodeUnknownSync(AgentTarget)(input)).toStrictEqual({
       kind: "agent",
       name: "worker",
     });
   }
+
   for (const input of [
     {},
     { kind: "agent", paneId: "pane-1" },
@@ -133,9 +144,11 @@ test("layout targets and pane swaps require one selection mode", () => {
     { tabId: undefined, paneId: "pane-1" },
   ])
     expect(Option.isNone(Schema.decodeUnknownOption(LayoutTarget)(input))).toBe(true);
+
   for (const input of [{ tabId: "tab-1" }, { paneId: "pane-1" }]) {
     expect(Option.isSome(Schema.decodeUnknownOption(LayoutTarget)(input))).toBe(true);
   }
+
   for (const input of [
     { direction: "right", sourcePaneId: "pane-1", targetPaneId: "pane-2" },
     { direction: "invalid", sourcePaneId: "pane-1", targetPaneId: "pane-2" },
@@ -144,6 +157,7 @@ test("layout targets and pane swaps require one selection mode", () => {
     { direction: "right", targetPaneId: undefined },
   ])
     expect(Option.isNone(Schema.decodeUnknownOption(PaneSwapInput)(input))).toBe(true);
+
   for (const input of [
     { direction: "right" },
     { sourcePaneId: "pane-1", targetPaneId: "pane-2" },
@@ -159,9 +173,11 @@ test("layout ratios retain their strict bounds and public encoded shape", () => 
     first: { type: "pane" },
     second: { type: "pane" },
   };
+
   for (const ratio of [0, 1, -1, NaN, Infinity]) {
     expect(Option.isNone(Schema.decodeUnknownOption(LayoutNode)({ ...root, ratio }))).toBe(true);
   }
+
   const validRoot = { ...root, ratio: 0.5 };
   expect(
     Schema.encodeSync(LayoutNode)(Schema.decodeUnknownSync(LayoutNode)(validRoot)),
@@ -176,6 +192,7 @@ test("worktree choices retain their source exclusion and required path-or-branch
   ]) {
     expect(Option.isNone(Schema.decodeUnknownOption(WorktreeOpenInput)(input))).toBe(true);
   }
+
   for (const input of [{ path: "/tmp/project" }, { branch: "main" }]) {
     expect(Option.isSome(Schema.decodeUnknownOption(WorktreeOpenInput)(input))).toBe(true);
   }
@@ -185,6 +202,7 @@ test("request deadlines reject negative and infinite durations while allowing ze
   for (const duration of [Duration.infinity, Duration.millis(-1)]) {
     expect(Option.isNone(Schema.decodeUnknownOption(HerdrRequestDeadline)(duration))).toBe(true);
   }
+
   expect(Option.isSome(Schema.decodeUnknownOption(HerdrRequestDeadline)(Duration.zero))).toBe(true);
 });
 
@@ -199,6 +217,7 @@ test("schema-less JSON rejects nonfinite numbers and class instances, including 
   ]) {
     expect(Option.isNone(Schema.decodeUnknownOption(HerdrJsonValue)(value))).toBe(true);
   }
+
   const json = { nested: [null, false, "text", 1] };
   expect(Schema.decodeUnknownSync(HerdrJsonValue)(json)).toStrictEqual(json);
 });
@@ -215,6 +234,7 @@ test("natural-number schemas retain safe-integer bounds", () => {
       { seed: 2103, runs: 100 },
     ),
   );
+
   for (const value of [
     0,
     Number.MAX_SAFE_INTEGER,
@@ -250,8 +270,10 @@ test("overflowing JSON numbers become correlated invalid-response failures throu
               : makeHerdrSuccessResponse(request),
           ),
         );
+
         const failure = yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
+
           return yield* sdk.agents
             .explain({ name: "worker" }, { requestId: "overflow" })
             .pipe(Effect.flip);
@@ -260,6 +282,7 @@ test("overflowing JSON numbers become correlated invalid-response failures throu
             herdrSdkLayerFromOptions({ socketPath: HerdrAbsolutePath.make(server.socketPath) }),
           ),
         );
+
         expect(failure).toBeInstanceOf(HerdrInvalidResponse);
         expect(failure).toMatchObject({ reason: "schema_mismatch", requestId: "overflow" });
         yield* server.waitFor("close", server.requests.length);
@@ -276,10 +299,12 @@ test("invalid targets and metadata fail at SDK boundaries before any socket requ
         const server = yield* startHerdrTestServer((request) =>
           Effect.succeed(makeHerdrSuccessResponse(request)),
         );
+
         yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
           const paneId = sdk.ids.pane("pane-1");
           const workspaceId = sdk.ids.workspace("workspace-1");
+
           for (const tokens of [
             { "bad.key": "value" },
             Object.fromEntries(Array.from({ length: 17 }, (_, i) => [`token${i}`, null])),
@@ -295,12 +320,14 @@ test("invalid targets and metadata fail at SDK boundaries before any socket requ
                 .pipe(Effect.flip),
             ).toBeInstanceOf(HerdrInvalidInput);
           }
+
           const invalidLabels = { working: "Busy", paused: "Paused" };
           expect(
             yield* sdk.panes
               .reportMetadata(paneId, { source: "fixture", stateLabels: invalidLabels })
               .pipe(Effect.flip),
           ).toBeInstanceOf(HerdrInvalidInput);
+
           for (const target of [
             { paneId: "pane-1", name: "worker" },
             { paneId: "", name: "worker" },
@@ -310,15 +337,18 @@ test("invalid targets and metadata fail at SDK boundaries before any socket requ
               HerdrInvalidInput,
             );
           }
+
           const layoutTarget = { paneId: "pane-1", tabId: "" };
           // @ts-expect-error Competing layout targets are invalid even when one ID is empty.
           const layoutRequest = sdk.layouts.export(layoutTarget);
           expect(yield* layoutRequest.pipe(Effect.flip)).toBeInstanceOf(HerdrInvalidInput);
+
           const swapInput = {
             direction: "right",
             sourcePaneId: "pane-1",
             targetPaneId: "pane-2",
           } as const;
+
           // @ts-expect-error Competing pane-swap modes must never silently pick a branch.
           const swapRequest = sdk.panes.swap(swapInput);
           expect(yield* swapRequest.pipe(Effect.flip)).toBeInstanceOf(HerdrInvalidInput);

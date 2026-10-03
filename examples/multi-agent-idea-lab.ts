@@ -4,27 +4,32 @@ import { runHerdrExample } from "./example-runtime.ts";
 
 const ideaTopic =
   process.argv.slice(2).join(" ") || "Invent a delightful way to teach Effect resource safety";
+
 const runSuffix = process.pid.toString();
 
 const multiAgentIdeaLab = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   const repositoryPath = herdr.ids.absolutePath(process.cwd());
+
   const created = yield* herdr.workspaces.createInDirectory(repositoryPath, {
     focus: true,
     label: `Idea lab: ${ideaTopic.slice(0, 32)}`,
   });
+
   const challengerPane = yield* herdr.panes.split(created.rootPane.id, {
     direction: "right",
     ratio: 0.5,
     cwd: repositoryPath,
     focus: false,
   });
+
   const synthesizerPane = yield* herdr.panes.split(challengerPane.id, {
     direction: "down",
     ratio: 0.5,
     cwd: repositoryPath,
     focus: false,
   });
+
   const explorerName = herdr.ids.agentName(`idea-explorer-${runSuffix}`);
   const challengerName = herdr.ids.agentName(`idea-challenger-${runSuffix}`);
   const synthesizerName = herdr.ids.agentName(`idea-synthesizer-${runSuffix}`);
@@ -71,6 +76,7 @@ const multiAgentIdeaLab = Effect.gen(function* () {
     ],
     { concurrency: "unbounded" },
   );
+
   const context = [exploration.text, challenge.text].map((text) => text.slice(-6_000)).join("\n\n");
 
   yield* herdr.agents.prompt(

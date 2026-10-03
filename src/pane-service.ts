@@ -70,38 +70,71 @@ import {
 } from "./herdr-transport.ts";
 
 const parsePane = Schema.decodeUnknownEffect(Pane);
+
 const parsePanes = Schema.decodeUnknownEffect(Schema.Array(Pane));
+
 const parsePaneAgentReportInput = Schema.decodeEffect(PaneAgentReportInput);
+
 const parsePaneAgentSessionReportInput = Schema.decodeEffect(PaneAgentSessionReportInput);
+
 const parsePaneClearAgentAuthorityInput = Schema.decodeEffect(PaneClearAgentAuthorityInput);
+
 const parsePaneCurrentInput = Schema.decodeEffect(PaneCurrentInput);
+
 const parsePaneEdgesResult = Schema.decodeUnknownEffect(PaneEdgesResult);
+
 const parsePaneFocusDirectionInput = Schema.decodeEffect(PaneFocusDirectionInput);
+
 const parsePaneFocusDirectionResult = Schema.decodeUnknownEffect(PaneFocusDirectionResult);
+
 const parsePaneInput = Schema.decodeEffect(PaneInput);
+
 const parsePaneInputRoutingInput = Schema.decodeEffect(PaneInputRoutingInput);
+
 const parsePaneKeySequence = Schema.decodeEffect(HerdrKeySequence);
+
 const parsePaneLabel = Schema.decodeEffect(Schema.String);
+
 const parsePaneLayoutSnapshot = Schema.decodeUnknownEffect(PaneLayoutSnapshot);
+
 const parsePaneListInput = Schema.decodeEffect(PaneListInput);
+
 const parsePaneMetadataReportInput = Schema.decodeEffect(PaneMetadataReportInput);
+
 const parsePaneMoveInput = Schema.decodeEffect(PaneMoveInput);
+
 const parsePaneMoveResult = Schema.decodeUnknownEffect(PaneMoveResult);
+
 const parsePaneNeighborResult = Schema.decodeUnknownEffect(PaneNeighborResult);
+
 const parsePaneOutputMatchResult = Schema.decodeUnknownEffect(PaneOutputMatchResult);
+
 const parsePaneProcessInfo = Schema.decodeUnknownEffect(PaneProcessInfo);
+
 const parsePaneReadInput = Schema.decodeEffect(PaneReadInput);
+
 const parsePaneReadResult = Schema.decodeUnknownEffect(PaneReadResult);
+
 const parsePaneReleaseAgentInput = Schema.decodeEffect(PaneReleaseAgentInput);
+
 const parsePaneResizeInput = Schema.decodeEffect(PaneResizeInput);
+
 const parsePaneResizeResult = Schema.decodeUnknownEffect(PaneResizeResult);
+
 const parsePaneSplitInput = Schema.decodeEffect(PaneSplitInput);
+
 const parsePaneSwapInput = Schema.decodeEffect(PaneSwapInput);
+
 const parsePaneSwapResult = Schema.decodeUnknownEffect(PaneSwapResult);
+
 const parsePaneText = Schema.decodeEffect(Schema.String);
+
 const parsePaneWaitForOutputInput = Schema.decodeEffect(PaneWaitForOutputInput);
+
 const parsePaneZoomInput = Schema.decodeEffect(PaneZoomInput);
+
 const parsePaneZoomResult = Schema.decodeUnknownEffect(PaneZoomResult);
+
 /**
  * Pane lifecycle, geometry, I/O, and reporting capability.
  *
@@ -301,6 +334,7 @@ export const makePaneService = Effect.gen(function* () {
           method === "pane.rename"
             ? yield* transport.request(method, { paneId: id, label }, options)
             : yield* transport.request(method, { paneId: id }, options);
+
         return yield* decodeHerdrWire(parsePane, response.result.pane, response.requestId);
       }),
   );
@@ -310,6 +344,7 @@ export const makePaneService = Effect.gen(function* () {
     split: defineHerdrOperation("PaneService.split", (targetPaneId, input, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.split", parsePaneSplitInput, input);
+
         const base = {
           targetPaneId: targetPaneId ?? null,
           workspaceId: Option.getOrNull(parsed.workspaceId),
@@ -317,25 +352,31 @@ export const makePaneService = Effect.gen(function* () {
           ratio: Option.getOrNull(parsed.ratio),
           cwd: Option.getOrNull(parsed.cwd),
         };
+
         const withEnv = Option.match(parsed.env, {
           onNone: () => base,
           onSome: (env) => ({ ...base, env }),
         });
+
         const parameters = Option.match(parsed.focus, {
           onNone: () => withEnv,
           onSome: (focus) => ({ ...withEnv, focus }),
         });
+
         const withRightClick = Option.match(parsed.rightClick, {
           onNone: () => parameters,
           onSome: (rightClick) => ({ ...parameters, rightClick }),
         });
+
         const response = yield* transport.request("pane.split", withRightClick, options);
+
         return yield* decodeHerdrWire(parsePane, response.result.pane, response.requestId);
       }),
     ),
     swap: defineHerdrOperation("PaneService.swap", (input, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.swap", parsePaneSwapInput, input);
+
         const parameters =
           parsed.direction !== undefined
             ? {
@@ -350,7 +391,9 @@ export const makePaneService = Effect.gen(function* () {
                 sourcePaneId: parsed.sourcePaneId,
                 targetPaneId: parsed.targetPaneId,
               };
+
         const response = yield* transport.request("pane.swap", parameters, options);
+
         return yield* decodeHerdrWire(
           parsePaneSwapResult,
           response.result.swap,
@@ -362,11 +405,14 @@ export const makePaneService = Effect.gen(function* () {
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.move", parsePaneMoveInput, input);
         const destination = encodePaneMoveDestination(parsed.destination);
+
         const parameters = Option.match(parsed.focus, {
           onNone: () => ({ paneId, destination }),
           onSome: (focus) => ({ paneId, destination, focus }),
         });
+
         const response = yield* transport.request("pane.move", parameters, options);
+
         return yield* decodeHerdrWire(
           parsePaneMoveResult,
           response.result.move_result,
@@ -377,11 +423,14 @@ export const makePaneService = Effect.gen(function* () {
     zoom: defineHerdrOperation("PaneService.zoom", (paneId, input = {}, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.zoom", parsePaneZoomInput, input);
+
         const parameters = Option.match(parsed.mode, {
           onNone: () => ({ paneId: paneId ?? null }),
           onSome: (mode) => ({ paneId: paneId ?? null, mode }),
         });
+
         const response = yield* transport.request("pane.zoom", parameters, options);
+
         return yield* decodeHerdrWire(
           parsePaneZoomResult,
           response.result.zoom,
@@ -396,6 +445,7 @@ export const makePaneService = Effect.gen(function* () {
           { paneId: paneId ?? null },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePaneLayoutSnapshot,
           response.result.layout,
@@ -410,6 +460,7 @@ export const makePaneService = Effect.gen(function* () {
           { paneId: paneId ?? null },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePaneProcessInfo,
           response.result.process_info,
@@ -424,6 +475,7 @@ export const makePaneService = Effect.gen(function* () {
           { paneId: paneId ?? null, direction },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePaneNeighborResult,
           response.result.neighbor,
@@ -438,6 +490,7 @@ export const makePaneService = Effect.gen(function* () {
           { paneId: paneId ?? null },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePaneEdgesResult,
           response.result.edges,
@@ -454,11 +507,13 @@ export const makePaneService = Effect.gen(function* () {
             parsePaneFocusDirectionInput,
             input,
           );
+
           const response = yield* transport.request(
             "pane.focus_direction",
             { direction, paneId: Option.getOrNull(parsed.paneId) },
             options,
           );
+
           return yield* decodeHerdrWire(
             parsePaneFocusDirectionResult,
             response.result.focus,
@@ -469,6 +524,7 @@ export const makePaneService = Effect.gen(function* () {
     resize: defineHerdrOperation("PaneService.resize", (direction, input = {}, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.resize", parsePaneResizeInput, input);
+
         const response = yield* transport.request(
           "pane.resize",
           {
@@ -478,6 +534,7 @@ export const makePaneService = Effect.gen(function* () {
           },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePaneResizeResult,
           response.result.resize,
@@ -488,22 +545,26 @@ export const makePaneService = Effect.gen(function* () {
     list: defineHerdrOperation("PaneService.list", (input = {}, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.list", parsePaneListInput, input);
+
         const response = yield* transport.request(
           "pane.list",
           { workspaceId: Option.getOrNull(parsed.workspaceId) },
           options,
         );
+
         return yield* decodeHerdrWire(parsePanes, response.result.panes, response.requestId);
       }),
     ),
     current: defineHerdrOperation("PaneService.current", (input = {}, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.current", parsePaneCurrentInput, input);
+
         const response = yield* transport.request(
           "pane.current",
           { callerPaneId: Option.getOrNull(parsed.callerPaneId) },
           options,
         );
+
         return yield* decodeHerdrWire(parsePane, response.result.pane, response.requestId);
       }),
     ),
@@ -519,6 +580,7 @@ export const makePaneService = Effect.gen(function* () {
           label === null
             ? null
             : yield* decodeHerdrInput("PaneService.rename", parsePaneLabel, label);
+
         return yield* decodePane("pane.rename", id, parsedLabel, options);
       }),
     ),
@@ -531,6 +593,7 @@ export const makePaneService = Effect.gen(function* () {
             parsePaneInputRoutingInput,
             input,
           );
+
           yield* transport.request(
             "pane.input.set",
             { paneId: id, rightClick: parsed.rightClick },
@@ -551,23 +614,30 @@ export const makePaneService = Effect.gen(function* () {
           parsePaneKeySequence,
           keys,
         );
+
         yield* transport.request("pane.send_keys", { paneId: id, keys: parsedKeys }, options);
       }),
     ),
     sendInput: defineHerdrOperation("PaneService.sendInput", (id, input, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.sendInput", parsePaneInput, input);
+
         if (parsed.text === undefined) {
           if (parsed.keys === undefined) {
             return yield* Effect.die(new Error("PaneInput schema produced neither text nor keys"));
           }
+
           yield* transport.request("pane.send_input", { paneId: id, keys: parsed.keys }, options);
+
           return;
         }
+
         if (parsed.keys === undefined) {
           yield* transport.request("pane.send_input", { paneId: id, text: parsed.text }, options);
+
           return;
         }
+
         yield* transport.request(
           "pane.send_input",
           { paneId: id, text: parsed.text, keys: parsed.keys },
@@ -579,11 +649,13 @@ export const makePaneService = Effect.gen(function* () {
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PaneService.read", parsePaneReadInput, input);
         const parameters = yield* encodePaneReadParameters(parsed).pipe(Effect.orDie);
+
         const response = yield* transport.request(
           "pane.read",
           { paneId: id, ...parameters },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePaneReadResult,
           response.result.read,
@@ -598,6 +670,7 @@ export const makePaneService = Effect.gen(function* () {
           parsePaneWaitForOutputInput,
           input,
         );
+
         const base = {
           paneId: id,
           source: parsed.source,
@@ -605,11 +678,14 @@ export const makePaneService = Effect.gen(function* () {
           match: parsed.match,
           timeoutMs: Option.getOrNull(parsed.timeoutMs),
         };
+
         const parameters = Option.match(parsed.stripAnsi, {
           onNone: () => base,
           onSome: (stripAnsi) => ({ ...base, stripAnsi }),
         });
+
         const response = yield* transport.request("pane.wait_for_output", parameters, options);
+
         return yield* decodeHerdrWire(
           parsePaneOutputMatchResult,
           response.result,
@@ -624,6 +700,7 @@ export const makePaneService = Effect.gen(function* () {
           parsePaneAgentReportInput,
           input,
         );
+
         yield* transport.request(
           "pane.report_agent",
           {
@@ -650,6 +727,7 @@ export const makePaneService = Effect.gen(function* () {
             parsePaneAgentSessionReportInput,
             input,
           );
+
           yield* transport.request(
             "pane.report_agent_session",
             {
@@ -673,6 +751,7 @@ export const makePaneService = Effect.gen(function* () {
           parsePaneMetadataReportInput,
           input,
         );
+
         const base = {
           paneId: id,
           source: parsed.source,
@@ -683,26 +762,32 @@ export const makePaneService = Effect.gen(function* () {
           seq: Option.getOrNull(parsed.sequence),
           ttlMs: Option.getOrNull(parsed.ttlMs),
         };
+
         const withStateLabels = Option.match(parsed.stateLabels, {
           onNone: () => base,
           onSome: (stateLabels) => ({ ...base, stateLabels }),
         });
+
         const withTokens = Option.match(parsed.tokens, {
           onNone: () => withStateLabels,
           onSome: (tokens) => ({ ...withStateLabels, tokens }),
         });
+
         const withClearTitle = Option.match(parsed.clearTitle, {
           onNone: () => withTokens,
           onSome: (clearTitle) => ({ ...withTokens, clearTitle }),
         });
+
         const withClearDisplayAgent = Option.match(parsed.clearDisplayAgent, {
           onNone: () => withClearTitle,
           onSome: (clearDisplayAgent) => ({ ...withClearTitle, clearDisplayAgent }),
         });
+
         const parameters = Option.match(parsed.clearStateLabels, {
           onNone: () => withClearDisplayAgent,
           onSome: (clearStateLabels) => ({ ...withClearDisplayAgent, clearStateLabels }),
         });
+
         yield* transport.request("pane.report_metadata", parameters, options);
       }),
     ),
@@ -715,6 +800,7 @@ export const makePaneService = Effect.gen(function* () {
             parsePaneClearAgentAuthorityInput,
             input,
           );
+
           yield* transport.request(
             "pane.clear_agent_authority",
             {
@@ -733,6 +819,7 @@ export const makePaneService = Effect.gen(function* () {
           parsePaneReleaseAgentInput,
           input,
         );
+
         yield* transport.request(
           "pane.release_agent",
           {

@@ -22,8 +22,10 @@ export const IntegrationState = Schema.Union([
   Schema.Literal("current"),
   Schema.Literal("outdated"),
 ]);
+
 /** Parsed integration installation state. @category models @since 0.9.0 */
 export type IntegrationState = typeof IntegrationState.Type;
+
 /** Discovered integration executable and installation state. @category schemas @since 0.9.0 */
 export const IntegrationInfo = Schema.Struct({
   target: IntegrationTarget,
@@ -32,10 +34,12 @@ export const IntegrationInfo = Schema.Struct({
   available: Schema.Boolean,
   state: IntegrationState,
 });
+
 /** One integration discovered by the server. @category models @since 0.9.0 */
 export interface IntegrationInfo extends Schema.Schema.Type<typeof IntegrationInfo> {}
 
 const parseIntegrations = Schema.decodeUnknownEffect(Schema.Array(IntegrationInfo));
+
 const parseIntegrationChangeResult = Schema.decodeUnknownEffect(IntegrationChangeResult);
 
 /**
@@ -79,6 +83,7 @@ export class IntegrationService extends Context.Service<IntegrationService, IInt
  */
 export const makeIntegrationService = Effect.gen(function* () {
   const transport = yield* HerdrTransport;
+
   const change = defineHerdrOperation(
     "IntegrationService.change",
     (
@@ -88,6 +93,7 @@ export const makeIntegrationService = Effect.gen(function* () {
     ) =>
       Effect.gen(function* () {
         const response = yield* transport.request(method, { target }, options);
+
         return yield* decodeHerdrWire(
           parseIntegrationChangeResult,
           {
@@ -103,6 +109,7 @@ export const makeIntegrationService = Effect.gen(function* () {
     list: defineHerdrOperation("IntegrationService.list", (options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("integration.list", {}, options);
+
         return yield* decodeHerdrWire(
           parseIntegrations,
           response.result.integrations,

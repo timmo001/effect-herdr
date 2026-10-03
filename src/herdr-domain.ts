@@ -9,7 +9,9 @@ import { isAbsolute } from "node:path";
 import { Schema } from "effect";
 
 const NonEmptyHerdrIdentifier = Schema.NonEmptyString;
+
 const HerdrNaturalNumber = Schema.Natural;
+
 const HerdrMetadataTokenName = Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{1,32}$/));
 
 /**
@@ -564,6 +566,7 @@ export const parseHerdrPopupSize = Schema.decodeUnknownEffect(HerdrPopupSize);
 
 /** Opaque endpoint-issued custom command identifier; never command text. @category schemas @since 0.9.0 */
 export const HerdrCommandId = NonEmptyHerdrIdentifier.pipe(Schema.brand("HerdrCommandId"));
+
 /** Parsed custom command identifier. @category models @since 0.9.0 */
 export type HerdrCommandId = typeof HerdrCommandId.Type;
 

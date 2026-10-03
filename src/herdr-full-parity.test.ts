@@ -15,6 +15,7 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
         const server = yield* startHerdrTestServer((request) =>
           Effect.sync(() => {
             const response = makeHerdrSuccessResponse(request);
+
             if (request.method === "events.subscribe") {
               const eventResponse = makeHerdrSuccessResponse({
                 id: request.id,
@@ -24,13 +25,16 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
                   timeout_ms: null,
                 },
               });
+
               if (eventResponse.result.type !== "wait_matched") {
                 throw new Error("Fixture generator returned the wrong events.wait result");
               }
+
               return new HerdrRawTestResponse(
                 `${JSON.stringify(response)}\n${JSON.stringify(eventResponse.result.event)}\n`,
               );
             }
+
             return response;
           }),
         );
@@ -229,12 +233,15 @@ test("every public namespace operation crosses the real Unix-socket seam", (cont
             .filter((method) => method !== "client_shell.surface.set")
             .sort(),
         );
+
         const notification = server.requests.find(
           (request) => request.method === "notification.show",
         );
+
         if (notification?.method !== "notification.show") {
           throw new Error("Notification request was not recorded");
         }
+
         expect("sound" in notification.params).toBe(false);
         expect(server.requests.find((request) => request.method === "layout.apply")).toMatchObject({
           params: { root: { pane_id: "pane-1", type: "pane" } },

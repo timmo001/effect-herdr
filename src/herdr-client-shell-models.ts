@@ -16,28 +16,39 @@ import { AgentStatus } from "./herdr-models.ts";
 import { PaneContentRevision } from "./herdr-pane-interaction-models.ts";
 
 const U16 = Schema.Natural.check(Schema.isLessThanOrEqualTo(65535));
+
 const U32 = Schema.Natural.check(Schema.isLessThanOrEqualTo(0xffff_ffff));
+
 const SafeNatural = Schema.Natural.check(Schema.isLessThanOrEqualTo(Number.MAX_SAFE_INTEGER));
+
 const optionalText = Schema.OptionFromOptionalNullOr(Schema.String);
+
 const TextPairs = Schema.Array(Schema.Tuple([Schema.String, Schema.String]));
+
 const unknownEndpointValue = Schema.String.pipe(
   Schema.decodeTo(Schema.Literal("unknown"), {
     decode: SchemaGetter.succeed("unknown"),
     encode: SchemaGetter.succeed("Unknown"),
   }),
 );
+
 const endpointAgentStatus = Schema.Union([AgentStatus, unknownEndpointValue]);
 
 /** Identifies one endpoint process boot; changes on server restart. @category schemas @since 0.9.0 */
 export const EndpointBootId = Schema.NonEmptyString.pipe(Schema.brand("EndpointBootId"));
+
 /** Parsed endpoint boot identity. @category models @since 0.9.0 */
 export type EndpointBootId = typeof EndpointBootId.Type;
+
 /** Replacement projection revision within one boot. @category schemas @since 0.9.0 */
 export const ProjectionRevision = SafeNatural.pipe(Schema.brand("ProjectionRevision"));
+
 /** Parsed projection revision. @category models @since 0.9.0 */
 export type ProjectionRevision = typeof ProjectionRevision.Type;
+
 /** Complete or incremental surface revision within one connection. @category schemas @since 0.9.0 */
 export const SurfaceRevision = SafeNatural.pipe(Schema.brand("SurfaceRevision"));
+
 /** Parsed surface revision. @category models @since 0.9.0 */
 export type SurfaceRevision = typeof SurfaceRevision.Type;
 
@@ -47,8 +58,10 @@ export const ClientShellWorktree = Schema.Struct({
   label: Schema.String,
   isLinkedWorktree: Schema.Boolean,
 }).pipe(Schema.encodeKeys({ isLinkedWorktree: "is_linked_worktree" }));
+
 /** Parsed shell worktree metadata. @category models @since 0.9.0 */
 export type ClientShellWorktree = typeof ClientShellWorktree.Type;
+
 /** Client-shell workspace projection, not an ordinary socket Workspace. @category schemas @since 0.9.0 */
 export const ClientShellWorkspace = Schema.Struct({
   workspaceId: WorkspaceId,
@@ -73,8 +86,10 @@ export const ClientShellWorkspace = Schema.Struct({
     agentStatus: "agent_status",
   }),
 );
+
 /** Parsed shell workspace projection. @category models @since 0.9.0 */
 export type ClientShellWorkspace = typeof ClientShellWorkspace.Type;
+
 /** Tab metadata in a client-shell projection. @category schemas @since 0.9.0 */
 export const ClientShellTab = Schema.Struct({
   tabId: TabId,
@@ -93,8 +108,10 @@ export const ClientShellTab = Schema.Struct({
     agentStatus: "agent_status",
   }),
 );
+
 /** Parsed shell tab projection. @category models @since 0.9.0 */
 export type ClientShellTab = typeof ClientShellTab.Type;
+
 /** Pane metadata in a client-shell projection. @category schemas @since 0.9.0 */
 export const ClientShellPane = Schema.Struct({
   paneId: PaneId,
@@ -114,8 +131,10 @@ export const ClientShellPane = Schema.Struct({
     rightClickPassthrough: "right_click_passthrough",
   }),
 );
+
 /** Parsed shell pane projection. @category models @since 0.9.0 */
 export type ClientShellPane = typeof ClientShellPane.Type;
+
 /** Agent display state; each client owns its viewed-completion presentation. @category schemas @since 0.9.0 */
 export const ClientShellAgent = Schema.Struct({
   paneId: PaneId,
@@ -145,8 +164,10 @@ export const ClientShellAgent = Schema.Struct({
     stateLabels: "state_labels",
   }),
 );
+
 /** Parsed shell agent projection. @category models @since 0.9.0 */
 export type ClientShellAgent = typeof ClientShellAgent.Type;
+
 /** Extensible endpoint command action; unfamiliar actions remain unknown. @category schemas @since 0.9.0 */
 export const ClientShellCommandAction = Schema.Union([
   Schema.Literal("Shell").transform("shell"),
@@ -155,8 +176,10 @@ export const ClientShellCommandAction = Schema.Union([
   Schema.Literal("PluginAction").transform("pluginAction"),
   unknownEndpointValue,
 ]);
+
 /** Parsed endpoint command action. @category models @since 0.9.0 */
 export type ClientShellCommandAction = typeof ClientShellCommandAction.Type;
+
 /** Opaque command identity and display labels; never executable command text. @category schemas @since 0.9.0 */
 export const ClientShellCommand = Schema.Struct({
   commandId: HerdrCommandId,
@@ -171,8 +194,10 @@ export const ClientShellCommand = Schema.Struct({
     bindingLabels: "binding_labels",
   }),
 );
+
 /** Parsed discovered command. @category models @since 0.9.0 */
 export type ClientShellCommand = typeof ClientShellCommand.Type;
+
 /** Current endpoint-owned product announcement. @category schemas @since 0.9.0 */
 export const ClientShellProductAnnouncement = Schema.Struct({
   version: Schema.String,
@@ -181,16 +206,20 @@ export const ClientShellProductAnnouncement = Schema.Struct({
   body: Schema.String,
   preview: Schema.Boolean,
 });
+
 /** Parsed current announcement. @category models @since 0.9.0 */
 export type ClientShellProductAnnouncement = typeof ClientShellProductAnnouncement.Type;
+
 /** Current endpoint-owned release notes. @category schemas @since 0.9.0 */
 export const ClientShellReleaseNotes = Schema.Struct({
   version: Schema.String,
   body: Schema.String,
   preview: Schema.Boolean,
 });
+
 /** Parsed endpoint release notes. @category models @since 0.9.0 */
 export type ClientShellReleaseNotes = typeof ClientShellReleaseNotes.Type;
+
 /** Whole replacement projection for one endpoint boot. @category schemas @since 0.9.0 */
 export const ClientShellProjection = Schema.Struct({
   bootId: EndpointBootId,
@@ -237,13 +266,16 @@ export const ClientShellProjection = Schema.Struct({
     agentOrder: "agent_order",
   }),
 );
+
 /** Parsed immutable shell projection; commands remain meaningful only for its live boot. @category models @since 0.9.0 */
 export type ClientShellProjection = typeof ClientShellProjection.Type;
 
 /** Surface-relative rectangle measured in terminal cells. @category schemas @since 0.9.0 */
 export const SurfaceRect = Schema.Struct({ x: U16, y: U16, width: U16, height: U16 });
+
 /** Parsed cell rectangle. @category models @since 0.9.0 */
 export type SurfaceRect = typeof SurfaceRect.Type;
+
 /** One terminal cell with packed colors and an optional hyperlink index. @category schemas @since 0.9.0 */
 export const ClientShellCell = Schema.Struct({
   symbol: Schema.String,
@@ -253,8 +285,10 @@ export const ClientShellCell = Schema.Struct({
   skip: Schema.Boolean,
   hyperlink: Schema.OptionFromNullOr(U32),
 });
+
 /** Parsed terminal cell. @category models @since 0.9.0 */
 export type ClientShellCell = typeof ClientShellCell.Type;
+
 /** Surface-relative cursor; shape is a DECSCUSR parameter. @category schemas @since 0.9.0 */
 export const ClientShellCursor = Schema.Struct({
   x: U16,
@@ -262,8 +296,10 @@ export const ClientShellCursor = Schema.Struct({
   visible: Schema.Boolean,
   shape: Schema.Natural.check(Schema.isLessThanOrEqualTo(255)),
 });
+
 /** Parsed terminal cursor. @category models @since 0.9.0 */
 export type ClientShellCursor = typeof ClientShellCursor.Type;
+
 /** Full row-major terminal frame, never applied to the host terminal automatically. @category schemas @since 0.9.0 */
 export const ClientShellFrame = Schema.Struct({
   cells: Schema.Array(ClientShellCell),
@@ -279,8 +315,10 @@ export const ClientShellFrame = Schema.Struct({
       "Client-shell frame dimensions do not match cell count",
   ),
 );
+
 /** Parsed complete terminal frame. @category models @since 0.9.0 */
 export type ClientShellFrame = typeof ClientShellFrame.Type;
+
 /** Pane geometry and revision in one active surface. @category schemas @since 0.9.0 */
 export const ClientShellSurfacePane = Schema.Struct({
   paneId: PaneId,
@@ -302,8 +340,10 @@ export const ClientShellSurfacePane = Schema.Struct({
   pixelWidth: U32,
   pixelHeight: U32,
 });
+
 /** Parsed pane surface metadata. @category models @since 0.9.0 */
 export type ClientShellSurfacePane = typeof ClientShellSurfacePane.Type;
+
 /** Surface BSP split handle. @category schemas @since 0.9.0 */
 export const ClientShellSurfaceSplit = Schema.Struct({
   direction: Schema.Literals(["horizontal", "vertical"]),
@@ -312,8 +352,10 @@ export const ClientShellSurfaceSplit = Schema.Struct({
   hitRect: SurfaceRect,
   path: Schema.Array(Schema.Boolean),
 });
+
 /** Parsed surface split handle. @category models @since 0.9.0 */
 export type ClientShellSurfaceSplit = typeof ClientShellSurfaceSplit.Type;
+
 /** Graphics identity preserves the full 64-bit fingerprint as bigint. @category schemas @since 0.9.0 */
 export const ClientShellGraphicsAssetKey = Schema.Struct({
   source: Schema.Union([
@@ -333,8 +375,10 @@ export const ClientShellGraphicsAssetKey = Schema.Struct({
   dataLength: SafeNatural,
   dataFingerprint: Schema.BigInt,
 });
+
 /** Parsed graphics asset identity. @category models @since 0.9.0 */
 export type ClientShellGraphicsAssetKey = typeof ClientShellGraphicsAssetKey.Type;
+
 /** Complete desired graphics scene with newly delivered bytes. @category schemas @since 0.9.0 */
 export const ClientShellGraphicsScene = Schema.Struct({
   assets: Schema.Array(
@@ -360,8 +404,10 @@ export const ClientShellGraphicsScene = Schema.Struct({
   ),
   retainedAssets: Schema.Array(ClientShellGraphicsAssetKey),
 });
+
 /** Parsed graphics scene; consumers retain assets referenced by subsequent scenes. @category models @since 0.9.0 */
 export type ClientShellGraphicsScene = typeof ClientShellGraphicsScene.Type;
+
 const PopupSize = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("cells"), value: U16 }),
   Schema.Struct({
@@ -369,6 +415,7 @@ const PopupSize = Schema.Union([
     value: Schema.Natural.check(Schema.isLessThanOrEqualTo(255)),
   }),
 ]);
+
 /** Popup terminal surface nested in an active client surface. @category schemas @since 0.9.0 */
 export const ClientShellPopupSurface = Schema.Struct({
   terminalId: TerminalId,
@@ -381,8 +428,10 @@ export const ClientShellPopupSurface = Schema.Struct({
   pixelWidth: U32,
   pixelHeight: U32,
 });
+
 /** Parsed popup surface. @category models @since 0.9.0 */
 export type ClientShellPopupSurface = typeof ClientShellPopupSurface.Type;
+
 /** Complete active-tab surface tied to boot, projection, and surface revisions. @category schemas @since 0.9.0 */
 export const ClientShellSurface = Schema.Struct({
   bootId: EndpointBootId,
@@ -394,8 +443,10 @@ export const ClientShellSurface = Schema.Struct({
   popup: Schema.OptionFromNullOr(ClientShellPopupSurface),
   graphics: ClientShellGraphicsScene,
 });
+
 /** Parsed active-tab surface. @category models @since 0.9.0 */
 export type ClientShellSurface = typeof ClientShellSurface.Type;
+
 /** Incremental update requiring an exact previously accepted base surface. @category schemas @since 0.9.0 */
 export const ClientShellSurfacePatch = Schema.Struct({
   bootId: EndpointBootId,
@@ -406,13 +457,16 @@ export const ClientShellSurfacePatch = Schema.Struct({
   panes: Schema.Array(ClientShellSurfacePane),
   cursor: Schema.OptionFromNullOr(ClientShellCursor),
 });
+
 /** Parsed incremental surface update. @category models @since 0.9.0 */
 export type ClientShellSurfacePatch = typeof ClientShellSurfacePatch.Type;
+
 /** Surface-interest acknowledgement is not a presentation-delivery acknowledgement. @category schemas @since 0.9.0 */
 export const ClientShellSurfaceAcknowledgement = Schema.Struct({
   active: Schema.Boolean,
   projectionRevision: ProjectionRevision,
 }).pipe(Schema.encodeKeys({ projectionRevision: "projection_revision" }));
+
 /** Parsed surface-interest acknowledgement. @category models @since 0.9.0 */
 export type ClientShellSurfaceAcknowledgement = typeof ClientShellSurfaceAcknowledgement.Type;
 
@@ -431,6 +485,7 @@ export const ClientShellSurfaceState = Schema.Union([
     surface: ClientShellSurface,
   }),
 ]);
+
 /** Parsed surface lifecycle state. @category models @since 0.9.0 */
 export type ClientShellSurfaceState = typeof ClientShellSurfaceState.Type;
 
@@ -476,5 +531,6 @@ export const ClientShellPresentationEvent = Schema.Union([
     }),
   }),
 ]);
+
 /** Parsed live host-presentation event. @category models @since 0.9.0 */
 export type ClientShellPresentationEvent = typeof ClientShellPresentationEvent.Type;

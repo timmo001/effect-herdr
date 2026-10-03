@@ -52,6 +52,7 @@ import {
 } from "./herdr-socket-lines.ts";
 
 const MAX_RESPONSE_LINE_BYTES = 1024 * 1024;
+
 const responseUtf8Decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 
 /** Keeps wire parameter types available from the transport import path. */
@@ -193,6 +194,7 @@ const HerdrWaitEventProbe = Schema.Struct({
 });
 
 const parseHerdrWaitEventProbe = Schema.decodeUnknownOption(HerdrWaitEventProbe);
+
 const supportedWaitEventKinds = new Set<string>(herdrApiSchema.schemas.event.$defs.EventKind.enum);
 
 type TransportOperation = HerdrTransportError["operation"];
@@ -207,13 +209,16 @@ function annotateHerdrTransportExit<
 >(exit: Exit.Exit<A, E>): Effect.Effect<void> {
   if (Exit.isSuccess(exit)) return Effect.annotateCurrentSpan("herdr.outcome", "success");
   const error = Cause.findErrorOption(exit.cause);
+
   return Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan(
       "herdr.outcome",
       Cause.hasInterruptsOnly(exit.cause) ? "interrupted" : "failure",
     );
+
     if (Option.isNone(error)) return;
     yield* Effect.annotateCurrentSpan("herdr.error_tag", error.value._tag);
+
     if (error.value._tag === "HerdrTransportError" || error.value._tag === "HerdrInvalidResponse") {
       yield* Effect.annotateCurrentSpan("herdr.reason", error.value.reason);
     }
@@ -266,6 +271,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
         "herdr.operation": operation,
         "herdr.deadline_ms": Duration.toMillis(deadline),
       });
+
       const value = yield* exchangeWireLine(
         config.socketPath,
         payload,
@@ -273,12 +279,14 @@ export const makeHerdrTransport = Effect.gen(function* () {
         requestId,
         deadline,
       );
+
       return yield* traceHerdrTransportPhase(
         Effect.gen(function* () {
           const response = yield* Effect.try({
             try: () => parseHerdrWireResponse(value, requestId),
             catch: (cause) => {
               const eventProbe = parseHerdrWaitEventProbe(value);
+
               return method === "events.wait" &&
                 Option.isSome(eventProbe) &&
                 !supportedWaitEventKinds.has(eventProbe.value.result.event.event)
@@ -294,6 +302,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
               new Error(`Herdr returned response ID ${response.id}`),
             );
           }
+
           if (isWireErrorResponse(response)) {
             return yield* new HerdrServerError(
               response.error.code,
@@ -301,6 +310,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
               requestId,
             );
           }
+
           if (
             response.result.type === "wait_matched" &&
             response.result.event.event !== response.result.event.data.type
@@ -311,6 +321,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
               new Error("Herdr wait event envelope disagrees with its data type"),
             );
           }
+
           if (!isExpectedWireResult(method, response.result)) {
             return yield* new HerdrUnsupportedResult(
               method,
@@ -319,7 +330,9 @@ export const makeHerdrTransport = Effect.gen(function* () {
               requestId,
             );
           }
+
           yield* Effect.annotateCurrentSpan("herdr.result_type", response.result.type);
+
           return { requestId, result: response.result };
         }),
         "herdr.response.decode",
@@ -352,6 +365,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
           randomUUID(),
           config.requestTimeout,
         ).pipe(Effect.catchTag("HerdrUnsupportedEvent", Effect.die));
+
         if (result.protocol !== config.supportedProtocol) {
           return yield* new HerdrUnsupportedProtocol(
             result.protocol,
@@ -359,7 +373,9 @@ export const makeHerdrTransport = Effect.gen(function* () {
             requestId,
           );
         }
+
         const checkSpan = yield* Effect.serviceOption(Tracer.ParentSpan);
+
         // Cache only immutable trace identity, never the root's attributes, events, or mutable status.
         return Option.map(checkSpan, (span) =>
           Tracer.externalSpan({
@@ -378,10 +394,12 @@ export const makeHerdrTransport = Effect.gen(function* () {
       timeToLive: (exit) => (Exit.isSuccess(exit) ? Duration.infinity : Duration.zero),
     },
   );
+
   const compatibilityCheck = traceHerdrTransportPhase(
     Effect.gen(function* () {
       const checkSpan = yield* Cache.get(compatibilityCache, "compatibility");
       const waiterSpan = yield* Effect.serviceOption(Tracer.ParentSpan);
+
       if (
         Option.isSome(checkSpan) &&
         Option.isSome(waiterSpan) &&
@@ -405,6 +423,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
       const parsedOptions = yield* parseHerdrTransportRequestOptions(options).pipe(
         Effect.mapError((cause) => new HerdrInvalidInput("transport.requestOptions", cause)),
       );
+
       const requestId = Option.getOrElse(parsedOptions.requestId, randomUUID);
       const deadline = Option.getOrElse(parsedOptions.requestTimeout, () => config.requestTimeout);
       const payload = encodeWireRequest(requestId, method, params);
@@ -413,22 +432,27 @@ export const makeHerdrTransport = Effect.gen(function* () {
         "herdr.operation": operation,
         "herdr.deadline_ms": Duration.toMillis(deadline),
       });
+
       return yield* Effect.gen(function* () {
         yield* compatibilityCheck;
+
         const socket = yield* Effect.acquireRelease(
           connectSocket(config.socketPath, operation, requestId),
           closeSocket,
           { interruptible: true },
         );
+
         return yield* Effect.gen(function* () {
           yield* writeSocketPayload(socket, payload, operation, requestId);
           const handshake = yield* readSocketLine(socket, operation, requestId);
+
           const result = yield* traceHerdrTransportPhase(
             Effect.gen(function* () {
               const response = yield* Effect.try({
                 try: () => parseHerdrWireResponse(handshake.value, requestId),
                 catch: (cause) => new HerdrInvalidResponse("schema_mismatch", requestId, cause),
               });
+
               if (response.id !== requestId) {
                 return yield* new HerdrInvalidResponse(
                   "correlation_mismatch",
@@ -436,6 +460,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
                   new Error(`Herdr returned response ID ${response.id}`),
                 );
               }
+
               if (isWireErrorResponse(response)) {
                 return yield* new HerdrServerError(
                   response.error.code,
@@ -443,6 +468,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
                   requestId,
                 );
               }
+
               if (!isExpectedWireResult(method, response.result)) {
                 return yield* new HerdrUnsupportedResult(
                   method,
@@ -451,13 +477,17 @@ export const makeHerdrTransport = Effect.gen(function* () {
                   requestId,
                 );
               }
+
               yield* Effect.annotateCurrentSpan("herdr.result_type", response.result.type);
+
               return response.result;
             }),
             "herdr.response.decode",
             { attributes: { "herdr.method": method, "herdr.operation": operation } },
           );
+
           yield* Effect.annotateCurrentSpan("herdr.result_type", result.type);
+
           return {
             requestId,
             result,
@@ -499,6 +529,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
       const parsedOptions = yield* parseHerdrTransportRequestOptions(options).pipe(
         Effect.mapError((cause) => new HerdrInvalidInput("transport.requestOptions", cause)),
       );
+
       const requestId = Option.getOrElse(parsedOptions.requestId, randomUUID);
       const deadline = Option.getOrElse(parsedOptions.requestTimeout, () => config.requestTimeout);
       yield* Effect.annotateCurrentSpan({
@@ -506,6 +537,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
         "herdr.operation": method === "ping" ? "compatibility_check" : "request",
         "herdr.deadline_ms": Duration.toMillis(deadline),
       });
+
       return yield* Effect.gen(function* () {
         if (method === "ping") {
           return yield* traceHerdrTransportPhase(
@@ -517,17 +549,21 @@ export const makeHerdrTransport = Effect.gen(function* () {
                 requestId,
                 deadline,
               );
+
               yield* verifyProtocolCompatibility(
                 response.result,
                 response.requestId,
                 config.supportedProtocol,
               );
+
               return response;
             }),
             "herdr.compatibility.check",
           );
         }
+
         yield* compatibilityCheck;
+
         return yield* requestWithoutCompatibility("request", method, params, requestId, deadline);
       }).pipe(
         Effect.timeoutOrElse({
@@ -577,19 +613,23 @@ function connectSocket(
 ): Effect.Effect<Socket, HerdrTransportError> {
   return Effect.suspend(() => {
     const connectionId = randomUUID();
+
     return traceHerdrTransportPhase(
       Effect.callback<Socket, HerdrTransportError>((resume) => {
         const socket = createConnection(resolveHerdrSocketEndpoint(socketPath));
         herdrSocketConnectionIds.set(socket, connectionId);
         let completed = false;
+
         const cleanup = (): void => {
           socket.off("connect", onConnect);
         };
+
         const onConnect = (): void => {
           completed = true;
           cleanup();
           resume(Effect.succeed(socket));
         };
+
         const onError = (cause: Error): void => {
           // Node also emits write callback failures as events. Keep a listener across
           // handshake/read gaps; writes report their callback error and reads inspect socket.errored.
@@ -599,9 +639,11 @@ function connectSocket(
           socket.destroy();
           resume(Effect.fail(new HerdrTransportError(operation, "connect", requestId, cause)));
         };
+
         socket.once("connect", onConnect);
         socket.on("error", onError);
         socket.once("close", () => socket.off("error", onError));
+
         return Effect.sync(() => {
           if (completed) return;
           completed = true;
@@ -626,6 +668,7 @@ export function resolveHerdrSocketEndpoint(
   platform: NodeJS.Platform = process.platform,
 ): string {
   if (platform !== "win32" || socketPath.startsWith("\\\\")) return socketPath;
+
   return `\\\\.\\pipe\\${socketPath}`;
 }
 
@@ -658,6 +701,7 @@ function makeHerdrSocketByteStream(
           ),
     ),
   );
+
   return initialBytes.length === 0
     ? socketBytes
     : Stream.concat(Stream.fromIterable(initialBytes), socketBytes);
@@ -675,11 +719,13 @@ function writeSocketPayload(
       socket.write(payload, (cause) => {
         if (completed) return;
         completed = true;
+
         if (cause === undefined || cause === null) resume(Effect.void);
         else {
           resume(Effect.fail(new HerdrTransportError(operation, "write", requestId, cause)));
         }
       });
+
       return Effect.sync(() => {
         if (completed) return;
         completed = true;
@@ -717,21 +763,26 @@ function readSocketLine(
       if (socket.errored !== null) {
         return yield* new HerdrTransportError(operation, "read", requestId, socket.errored);
       }
+
       const socketBytes = NodeStream.fromReadable<Uint8Array, HerdrTransportError>({
         evaluate: () => socket,
         closeOnDone: false,
         onError: (cause) => new HerdrTransportError(operation, "read", requestId, cause),
       });
+
       const line = yield* socketBytes.pipe(
         Stream.mapAccumArrayEffect(makeHerdrSocketLineBuffer, (state, chunks) =>
           parseFirstHerdrSocketLine(state, chunks, requestId),
         ),
         Stream.runHead,
       );
+
       if (Option.isSome(line)) {
         yield* Effect.annotateCurrentSpan("herdr.bytes_read", line.value.bytesRead);
+
         return line.value;
       }
+
       return yield* new HerdrTransportError(
         operation,
         "premature_close",
@@ -759,15 +810,18 @@ function parseFirstHerdrSocketLine(
 > {
   return Effect.gen(function* () {
     const split = splitHerdrSocketLines(state, chunks, MAX_RESPONSE_LINE_BYTES, requestId, 1);
+
     if (Result.isFailure(split)) return yield* split.failure;
 
     const lineBytes = split.success.lines.at(0);
+
     if (lineBytes === undefined) return [split.success.buffer, []];
 
     const value = yield* Effect.try({
       try: () => JSON.parse(responseUtf8Decoder.decode(lineBytes)),
       catch: (cause) => new HerdrInvalidResponse("malformed_json", requestId, cause),
     });
+
     return [
       split.success.buffer,
       [{ value, remainder: split.success.remainder, bytesRead: lineBytes.byteLength + 1 }],
@@ -789,6 +843,7 @@ function verifyProtocolCompatibility(
   if (result.type !== "pong") {
     return Effect.fail(new HerdrUnsupportedResult("ping", result.type, "pong", requestId));
   }
+
   return result.protocol === supportedProtocol
     ? Effect.void
     : Effect.fail(new HerdrUnsupportedProtocol(result.protocol, supportedProtocol, requestId));
@@ -807,6 +862,7 @@ function exchangeWireLine(
       Effect.gen(function* () {
         yield* writeSocketPayload(socket, payload, operation, requestId);
         const response = yield* readSocketLine(socket, operation, requestId);
+
         return response.value;
       }),
     closeSocket,

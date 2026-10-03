@@ -21,6 +21,7 @@ export class HerdrEndpointNegotiationError extends Schema.TaggedError<HerdrEndpo
     });
   }
 }
+
 /** Endpoint socket acquisition or I/O failed. @category errors @since 0.9.0 */
 export class HerdrEndpointTransportError extends Schema.TaggedError<HerdrEndpointTransportError>()(
   "HerdrEndpointTransportError",
@@ -37,6 +38,7 @@ export class HerdrEndpointTransportError extends Schema.TaggedError<HerdrEndpoin
     });
   }
 }
+
 /** Endpoint framing, chunking, or presentation data violated its negotiated contract. @category errors @since 0.9.0 */
 export class HerdrEndpointInvalidMessage extends Schema.TaggedError<HerdrEndpointInvalidMessage>()(
   "HerdrEndpointInvalidMessage",
@@ -61,6 +63,7 @@ export class HerdrEndpointInvalidMessage extends Schema.TaggedError<HerdrEndpoin
     });
   }
 }
+
 /** A bounded endpoint acquisition, request, or health probe expired. @category errors @since 0.9.0 */
 export class HerdrEndpointRequestTimeout extends Schema.TaggedError<HerdrEndpointRequestTimeout>()(
   "HerdrEndpointRequestTimeout",
@@ -77,6 +80,7 @@ export class HerdrEndpointRequestTimeout extends Schema.TaggedError<HerdrEndpoin
     });
   }
 }
+
 /** A connection handle was used after its owning session ended. @category errors @since 0.9.0 */
 export class HerdrEndpointClosed extends Schema.TaggedError<HerdrEndpointClosed>()(
   "HerdrEndpointClosed",
@@ -90,6 +94,7 @@ export class HerdrEndpointClosed extends Schema.TaggedError<HerdrEndpointClosed>
     });
   }
 }
+
 /** Endpoint does not advertise a requested optional API method. @category errors @since 0.9.0 */
 export class HerdrEndpointUnsupportedMethod extends Schema.TaggedError<HerdrEndpointUnsupportedMethod>()(
   "HerdrEndpointUnsupportedMethod",
@@ -103,6 +108,7 @@ export class HerdrEndpointUnsupportedMethod extends Schema.TaggedError<HerdrEndp
     });
   }
 }
+
 /** An endpoint-issued handle belongs to another connection or boot. @category errors @since 0.9.0 */
 export class HerdrEndpointStaleReference extends Schema.TaggedError<HerdrEndpointStaleReference>()(
   "HerdrEndpointStaleReference",
@@ -116,6 +122,7 @@ export class HerdrEndpointStaleReference extends Schema.TaggedError<HerdrEndpoin
     });
   }
 }
+
 /** Failures that terminate a client-shell resource lifetime. @category errors @since 0.9.0 */
 export type HerdrEndpointFailure =
   | HerdrEndpointNegotiationError

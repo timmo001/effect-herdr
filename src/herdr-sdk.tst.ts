@@ -8,21 +8,30 @@ type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
     ? true
     : false;
+
 type Assert<Value extends true> = Value;
+
 type EffectSuccess<Value> =
   Value extends Effect.Effect<infer Success, infer _Error, infer _Requirements> ? Success : never;
+
 type EffectError<Value> =
   Value extends Effect.Effect<infer _Success, infer Error, infer _Requirements> ? Error : never;
+
 type StreamSuccess<Value> =
   Value extends Stream.Stream<infer Success, infer _Error, infer _Requirements> ? Success : never;
 
 declare const herdr: IHerdrSdk;
+
 declare const paneId: ReturnType<IHerdrSdk["ids"]["pane"]>;
 
 const workspaceCreate = herdr.workspaces.create();
+
 const workspaceEventStream = herdr.events.subscribe([{ type: "workspace.created" }] as const);
+
 const workspaceList = herdr.workspaces.list();
+
 const eventWait = herdr.events.wait({ type: "workspace.created" });
+
 herdr.agents.start({ name: herdr.ids.agentName("muse"), kind: "muse", paneId });
 
 /** Compile-time proof that Stripe-style namespace calls preserve operation success. */

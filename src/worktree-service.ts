@@ -31,12 +31,19 @@ import {
 } from "./herdr-transport.ts";
 
 const parseWorktreeCreateInput = Schema.decodeEffect(WorktreeCreateInput);
+
 const parseWorktreeCreateResult = Schema.decodeUnknownEffect(WorktreeCreateResult);
+
 const parseWorktreeListInput = Schema.decodeEffect(WorktreeListInput);
+
 const parseWorktreeListResult = Schema.decodeUnknownEffect(WorktreeListResult);
+
 const parseWorktreeOpenInput = Schema.decodeEffect(WorktreeOpenInput);
+
 const parseWorktreeOpenResult = Schema.decodeUnknownEffect(WorktreeOpenResult);
+
 const parseWorktreeRemoveInput = Schema.decodeEffect(WorktreeRemoveInput);
+
 const parseWorktreeRemoveResult = Schema.decodeUnknownEffect(WorktreeRemoveResult);
 
 /**
@@ -96,15 +103,19 @@ export const makeWorktreeService = Effect.gen(function* () {
           parseWorktreeListInput,
           input,
         );
+
         const base = {
           workspaceId: Option.getOrNull(parsed.workspaceId),
           cwd: Option.getOrNull(parsed.cwd),
         };
+
         const parameters = Option.match(parsed.trustRepository, {
           onNone: () => base,
           onSome: (trustRepository) => ({ ...base, trustRepository }),
         });
+
         const response = yield* transport.request("worktree.list", parameters, options);
+
         return yield* decodeHerdrWire(parseWorktreeListResult, response.result, response.requestId);
       }),
     ),
@@ -115,6 +126,7 @@ export const makeWorktreeService = Effect.gen(function* () {
           parseWorktreeCreateInput,
           input,
         );
+
         const parametersWithoutFocus = {
           workspaceId: Option.getOrNull(parsed.workspaceId),
           cwd: Option.getOrNull(parsed.cwd),
@@ -123,15 +135,19 @@ export const makeWorktreeService = Effect.gen(function* () {
           path: Option.getOrNull(parsed.path),
           label: Option.getOrNull(parsed.label),
         };
+
         const withFocus = Option.match(parsed.focus, {
           onNone: () => parametersWithoutFocus,
           onSome: (focus) => ({ ...parametersWithoutFocus, focus }),
         });
+
         const parameters = Option.match(parsed.trustRepository, {
           onNone: () => withFocus,
           onSome: (trustRepository) => ({ ...withFocus, trustRepository }),
         });
+
         const response = yield* transport.request("worktree.create", parameters, options);
+
         return yield* decodeHerdrWire(
           parseWorktreeCreateResult,
           response.result,
@@ -146,6 +162,7 @@ export const makeWorktreeService = Effect.gen(function* () {
           parseWorktreeOpenInput,
           input,
         );
+
         const parametersWithoutFocus = {
           workspaceId: Option.getOrNull(parsed.workspaceId),
           cwd: Option.getOrNull(parsed.cwd),
@@ -153,15 +170,19 @@ export const makeWorktreeService = Effect.gen(function* () {
           branch: Option.getOrNull(parsed.branch),
           label: Option.getOrNull(parsed.label),
         };
+
         const withFocus = Option.match(parsed.focus, {
           onNone: () => parametersWithoutFocus,
           onSome: (focus) => ({ ...parametersWithoutFocus, focus }),
         });
+
         const parameters = Option.match(parsed.trustRepository, {
           onNone: () => withFocus,
           onSome: (trustRepository) => ({ ...withFocus, trustRepository }),
         });
+
         const response = yield* transport.request("worktree.open", parameters, options);
+
         return yield* decodeHerdrWire(parseWorktreeOpenResult, response.result, response.requestId);
       }),
     ),
@@ -174,15 +195,19 @@ export const makeWorktreeService = Effect.gen(function* () {
             parseWorktreeRemoveInput,
             input,
           );
+
           const withForce = Option.match(parsed.force, {
             onNone: () => ({ workspaceId }),
             onSome: (force) => ({ workspaceId, force }),
           });
+
           const parameters = Option.match(parsed.trustRepository, {
             onNone: () => withForce,
             onSome: (trustRepository) => ({ ...withForce, trustRepository }),
           });
+
           const response = yield* transport.request("worktree.remove", parameters, options);
+
           return yield* decodeHerdrWire(
             parseWorktreeRemoveResult,
             response.result,

@@ -49,10 +49,12 @@ export class SessionService extends Context.Service<SessionService, ISessionServ
  */
 export const makeSessionService = Effect.gen(function* () {
   const transport = yield* HerdrTransport;
+
   return SessionService.of({
     snapshot: defineHerdrOperation("SessionService.snapshot", (options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("session.snapshot", {}, options);
+
         return yield* decodeHerdrWire(
           parseSessionSnapshot,
           response.result.snapshot,

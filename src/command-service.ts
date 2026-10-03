@@ -25,21 +25,28 @@ import {
 export const CommandTabInput = Schema.Struct({
   expectedWorkspaceId: Schema.optionalKey(WorkspaceId),
 });
+
 /** Parsed tab-scoped command input. @category models @since 0.9.0 */
 export interface CommandTabInput extends Schema.Schema.Type<typeof CommandTabInput> {}
+
 /** Caller-supplied tab parent assertion. @category inputs @since 0.9.0 */
 export type CommandTabInputEncoded = typeof CommandTabInput.Encoded;
+
 /** Pane command selection always belongs to the positional pane target. @category schemas @since 0.9.0 */
 export const CommandPaneInput = Schema.Struct({
   expectedWorkspaceId: Schema.optionalKey(WorkspaceId),
   expectedTabId: Schema.optionalKey(TabIdSchema),
   selection: Schema.optionalKey(PaneSelectionReadInput),
 });
+
 /** Parsed pane-scoped command input. @category models @since 0.9.0 */
 export interface CommandPaneInput extends Schema.Schema.Type<typeof CommandPaneInput> {}
+
 /** Caller-supplied pane command selection and parent assertions. @category inputs @since 0.9.0 */
 export type CommandPaneInputEncoded = typeof CommandPaneInput.Encoded;
+
 const parseCommandTab = Schema.decodeEffect(CommandTabInput, { onExcessProperty: "error" });
+
 const parseCommandPane = Schema.decodeEffect(CommandPaneInput, { onExcessProperty: "error" });
 
 /** Custom command execution by opaque ID, never arbitrary shell text. @category services @since 0.9.0 */
@@ -70,13 +77,16 @@ export interface ICommandService {
     options?: HerdrTransportRequestOptionsEncoded,
   ) => Effect.Effect<void, HerdrTransportRequestError>;
 }
+
 /** Yieldable custom-command capability. @category services @since 0.9.0 */
 export class CommandService extends Context.Service<CommandService, ICommandService>()(
   "@herdr/sdk/CommandService",
 ) {}
+
 /** Constructs commands using the shared socket transport. @category constructors @since 0.9.0 */
 export const makeCommandService = Effect.gen(function* () {
   const transport = yield* HerdrTransport;
+
   return CommandService.of({
     invoke: defineHerdrOperation("CommandService.invoke", (commandId, options = {}) =>
       transport.request("command.invoke", { commandId }, options).pipe(Effect.asVoid),
@@ -97,6 +107,7 @@ export const makeCommandService = Effect.gen(function* () {
             parseCommandTab,
             input,
           );
+
           yield* transport.request(
             "command.invoke",
             {
@@ -119,6 +130,7 @@ export const makeCommandService = Effect.gen(function* () {
             parseCommandPane,
             input,
           );
+
           yield* transport.request(
             "command.invoke",
             {
@@ -138,11 +150,13 @@ export const makeCommandService = Effect.gen(function* () {
     ),
   });
 });
+
 /** Provides commands while preserving the transport requirement. @category layers @since 0.9.0 */
 export const commandServiceLayerWithoutDependencies = Layer.effect(
   CommandService,
   makeCommandService,
 );
+
 /** Production custom-command service Layer. @category layers @since 0.9.0 */
 export const commandServiceLayer = commandServiceLayerWithoutDependencies.pipe(
   Layer.provide(herdrTransportLayer),

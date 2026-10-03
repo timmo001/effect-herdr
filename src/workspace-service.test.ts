@@ -107,6 +107,7 @@ test("workspace service implements every workspace wire operation", (context) =>
               ttlMs: 1_000,
             });
             yield* workspaces.close(id);
+
             return { created, listed, found };
           }),
         );
@@ -152,6 +153,7 @@ function withWorkspaceService<A, E>(
     application: Option.none(),
     supportedProtocol: 22,
   };
+
   return effect.pipe(
     Effect.provide(workspaceServiceLayerWithoutDependencies),
     Effect.provide(herdrTransportLayerWithoutDependencies),

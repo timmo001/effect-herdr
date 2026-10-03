@@ -6,7 +6,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { compile } from "json-schema-to-typescript";
 
 const WireGenerationError = Schema.TaggedStruct("WireGenerationError", { message: Schema.String });
+
 const schemaObject = Schema.Record(Schema.String, Schema.MutableJson);
+
 const wireDocumentSchema = Schema.Struct({
   schemas: Schema.Struct({
     request: Schema.Struct({
@@ -36,16 +38,19 @@ const wireDocumentSchema = Schema.Struct({
 const parseWireSourceDocument = Schema.decodeEffect(
   Schema.fromJsonString(Schema.Struct({ schemas: Schema.Record(Schema.String, schemaObject) })),
 );
+
 const parseWireDocument = Schema.decodeUnknownEffect(wireDocumentSchema);
 
 const generateWireTypes = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const argumentsList = process.argv.slice(2);
+
   if (
     argumentsList.length !== 0 &&
     (argumentsList.length !== 2 || argumentsList[0] !== "--output-dir" || !argumentsList[1])
   ) {
     process.exitCode = 2;
+
     return yield* Effect.fail(
       WireGenerationError.make({
         message:
@@ -53,15 +58,19 @@ const generateWireTypes = Effect.gen(function* () {
       }),
     );
   }
+
   const schemaPath = new URL("../src/schema/herdr-api.schema.json", import.meta.url);
   const outputDirectory = argumentsList[1];
+
   const generatedDirectory =
     outputDirectory === undefined
       ? new URL("../src/generated/", import.meta.url)
       : pathToFileURL(resolve(outputDirectory) + sep);
+
   const sourceDocument = yield* parseWireSourceDocument(
     yield* fs.readFileString(fileURLToPath(schemaPath)),
   );
+
   const document = yield* parseWireDocument(sourceDocument);
 
   const resultMethods = {
@@ -153,29 +162,36 @@ const generateWireTypes = Effect.gen(function* () {
     plugin_pane_focused: ["plugin.pane.focus"],
     plugin_pane_closed: ["plugin.pane.close"],
   };
+
   const resultTypeByMethod = Object.fromEntries(
     Object.entries(resultMethods).flatMap(([result, methods]) =>
       methods.map((method) => [method, result]),
     ),
   );
+
   const schemaMethods = document.schemas.request.oneOf.map(
     (entry) => entry.properties.method.const,
   );
+
   const expectedMethods = [...schemaMethods].sort((left, right) => left.localeCompare(right));
+
   const mappedMethods = Object.keys(resultTypeByMethod).sort((left, right) =>
     left.localeCompare(right),
   );
+
   if (JSON.stringify(expectedMethods) !== JSON.stringify(mappedMethods))
     return yield* Effect.fail(
       WireGenerationError.make({
         message: `Wire result map differs from schema methods: expected ${expectedMethods.join(",")}; mapped ${mappedMethods.join(",")}`,
       }),
     );
+
   const responseTypes = new Set(
     document.schemas.success_response.$defs.ResponseResult.oneOf.map(
       (entry) => entry.properties.type.const,
     ),
   );
+
   for (const resultType of Object.values(resultTypeByMethod))
     if (!responseTypes.has(resultType))
       return yield* Effect.fail(
@@ -192,15 +208,18 @@ const generateWireTypes = Effect.gen(function* () {
     ["event", "WireEventEnvelope", "wire-event.ts"],
     ["subscription_event", "WireSubscriptionEventEnvelope", "wire-subscription-event.ts"],
   ];
+
   for (const [schemaName, typeName, fileName] of generationTargets) {
     // Keep original property insertion order: Schema's structural projection is for integrity checks only.
     const originalSchema = sourceDocument.schemas[schemaName];
+
     if (!originalSchema)
       return yield* Effect.fail(
         WireGenerationError.make({ message: `Wire schema missing: ${schemaName}` }),
       );
     const schema = structuredClone(originalSchema);
     rewriteLocalReferences(schema, `#/schemas/${schemaName}/`, "#/");
+
     // json-schema-to-typescript exposes a Promise API; keep that adapter at this call.
     const source = yield* Effect.tryPromise({
       try: () =>
@@ -212,12 +231,14 @@ const generateWireTypes = Effect.gen(function* () {
       catch: () =>
         WireGenerationError.make({ message: `Wire schema compilation failed: ${schemaName}` }),
     });
+
     yield* fs.writeFileString(fileURLToPath(new URL(fileName, generatedDirectory)), source);
   }
 
   const methodEntries = Object.entries(resultTypeByMethod).sort(([left], [right]) =>
     left.localeCompare(right),
   );
+
   const mapSource = `/** Generated and exhaustively checked against the bundled Herdr schema; do not edit. */\nimport type { Request } from "./wire-request.ts";\nimport type { ResponseResult } from "./wire-success-response.ts";\n\nexport interface WireMethodMap {\n${methodEntries.map(([method, result]) => `  readonly ${JSON.stringify(method)}: { readonly params: Extract<Request, { readonly method: ${JSON.stringify(method)} }>["params"]; readonly result: Extract<ResponseResult, { readonly type: ${method === "plugin.pane.open" ? '"plugin_pane_opened" | "ok"' : JSON.stringify(result)} }> };`).join("\n")}\n}\n\n/** Every schema-declared request method. */\nexport type WireMethod = keyof WireMethodMap;\n\n/** Success discriminants accepted for each correlated wire method. */\nexport const wireResultTypesByMethod = {\n${methodEntries.map(([method, result]) => `  ${JSON.stringify(method)}: [${method === "plugin.pane.open" ? '"plugin_pane_opened", "ok"' : JSON.stringify(result)}],`).join("\n")}\n} as const satisfies { readonly [Method in WireMethod]: readonly WireMethodMap[Method]["result"]["type"][] };\n`;
   yield* fs.writeFileString(
     fileURLToPath(new URL("wire-method-map.ts", generatedDirectory)),
@@ -246,11 +267,15 @@ NodeRuntime.runMain(
 function rewriteLocalReferences(value, prefix, replacement) {
   if (Array.isArray(value)) {
     for (const child of value) rewriteLocalReferences(child, prefix, replacement);
+
     return;
   }
+
   if (value === null || typeof value !== "object") return;
+
   if ("$ref" in value && typeof value.$ref === "string" && value.$ref.startsWith(prefix)) {
     value.$ref = replacement + value.$ref.slice(prefix.length);
   }
+
   for (const child of Object.values(value)) rewriteLocalReferences(child, prefix, replacement);
 }

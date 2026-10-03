@@ -29,15 +29,23 @@ import {
 } from "./herdr-transport.ts";
 
 const parseWorkspace = Schema.decodeUnknownEffect(Workspace);
+
 const parseWorkspaces = Schema.decodeUnknownEffect(Schema.Array(Workspace));
+
 const parseWorkspaceCreateOptions = Schema.decodeEffect(WorkspaceCreateOptions, {
   onExcessProperty: "error",
 });
+
 const parseWorkspaceDirectory = Schema.decodeEffect(HerdrAbsolutePath);
+
 const parseWorkspaceCreateResult = Schema.decodeUnknownEffect(WorkspaceCreateResult);
+
 const parseWorkspaceLabel = Schema.decodeEffect(Schema.String);
+
 const parseWorkspaceMetadataReportInput = Schema.decodeEffect(WorkspaceMetadataReportInput);
+
 const parseWorkspaceMoveBlockInput = Schema.decodeEffect(WorkspaceMoveBlockInput);
+
 const parseWorkspaceMoveInput = Schema.decodeEffect(WorkspaceMoveInput);
 
 /**
@@ -150,6 +158,7 @@ export const makeWorkspaceService = Effect.gen(function* () {
     ) =>
       Effect.gen(function* () {
         const response = yield* transport.request(operation, { workspaceId: id }, options);
+
         return yield* decodeHerdrWire(
           parseWorkspace,
           response.result.workspace,
@@ -169,12 +178,14 @@ export const makeWorkspaceService = Effect.gen(function* () {
   ) =>
     Effect.gen(function* () {
       const parsed = yield* decodeHerdrInput(operation, parseWorkspaceCreateOptions, input);
+
       const directory =
         source.kind === "directory"
           ? { cwd: source.cwd }
           : source.kind === "workspace"
             ? { sourceWorkspaceId: source.sourceWorkspaceId }
             : {};
+
       const response = yield* transport.request(
         "workspace.create",
         {
@@ -185,6 +196,7 @@ export const makeWorkspaceService = Effect.gen(function* () {
         },
         options,
       );
+
       return yield* decodeHerdrWire(
         parseWorkspaceCreateResult,
         response.result,
@@ -205,6 +217,7 @@ export const makeWorkspaceService = Effect.gen(function* () {
             parseWorkspaceDirectory,
             cwd,
           );
+
           return yield* createWorkspace(
             "WorkspaceService.createInDirectory",
             { kind: "directory", cwd: directory },
@@ -226,6 +239,7 @@ export const makeWorkspaceService = Effect.gen(function* () {
     list: defineHerdrOperation("WorkspaceService.list", (options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("workspace.list", {}, options);
+
         return yield* decodeHerdrWire(
           parseWorkspaces,
           response.result.workspaces,
@@ -246,11 +260,13 @@ export const makeWorkspaceService = Effect.gen(function* () {
           parseWorkspaceLabel,
           label,
         );
+
         const response = yield* transport.request(
           "workspace.rename",
           { workspaceId: id, label: parsedLabel },
           options,
         );
+
         return yield* decodeHerdrWire(
           parseWorkspace,
           response.result.workspace,
@@ -265,11 +281,13 @@ export const makeWorkspaceService = Effect.gen(function* () {
           parseWorkspaceMoveInput,
           input,
         );
+
         const response = yield* transport.request(
           "workspace.move",
           { workspaceId: id, insertIndex: parsed.insertIndex },
           options,
         );
+
         return yield* decodeHerdrWire(
           parseWorkspaces,
           response.result.workspaces,
@@ -284,6 +302,7 @@ export const makeWorkspaceService = Effect.gen(function* () {
           parseWorkspaceMoveBlockInput,
           input,
         );
+
         const response = yield* transport.request(
           "workspace.move_block",
           {
@@ -292,6 +311,7 @@ export const makeWorkspaceService = Effect.gen(function* () {
           },
           options,
         );
+
         return yield* decodeHerdrWire(
           parseWorkspaces,
           response.result.workspaces,
@@ -308,6 +328,7 @@ export const makeWorkspaceService = Effect.gen(function* () {
             parseWorkspaceMetadataReportInput,
             input,
           );
+
           yield* transport.request(
             "workspace.report_metadata",
             {

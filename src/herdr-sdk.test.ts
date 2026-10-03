@@ -49,6 +49,7 @@ test("root SDK exposes Stripe-style namespaces sharing one compatibility check",
           const herdr = yield* HerdrSdk;
           const workspaces = yield* herdr.workspaces.list();
           yield* herdr.popups.close();
+
           return {
             workspaces,
             socketPath: herdr.config.socketPath,

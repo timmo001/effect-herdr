@@ -5,10 +5,12 @@ import { runHerdrExample } from "./example-runtime.ts";
 const developmentWorkspace = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   const repositoryPath = herdr.ids.absolutePath(process.cwd());
+
   const created = yield* herdr.workspaces.createInDirectory(repositoryPath, {
     focus: true,
     label: "SDK development",
   });
+
   const testPane = yield* herdr.panes.split(created.rootPane.id, {
     direction: "right",
     ratio: 0.5,

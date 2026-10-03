@@ -32,11 +32,13 @@ import {
 import snapshotFixture from "./fixtures/endpoint-snapshot-v1.json" with { type: "json" };
 
 const geometry = { surface: { columns: 80, rows: 24 }, cellPixels: { width: 8, height: 16 } };
+
 const withSdk = <A, E>(program: Effect.Effect<A, E, HerdrSdk | Scope.Scope>) =>
   Effect.gen(function* () {
     const api = yield* startHerdrTestServer((request) =>
       Effect.succeed(makeHerdrSuccessResponse(request)),
     );
+
     return yield* program.pipe(
       Effect.provide(
         herdrSdkLayerFromOptions({ socketPath: HerdrAbsolutePath.make(api.socketPath) }),
@@ -50,15 +52,18 @@ test("endpoint request encoding matches the frozen upstream generation-1 SHA-256
     "boot-a",
     '{"id":"request-a","method":"session.snapshot","params":{}}',
   );
+
   expect(createHash("sha256").update(frame.subarray(4)).digest("hex")).toBe(
     "de5693585a01f6b0d5ee07c51b6ddf79ee9f67dbf183255822d31f35210f5ffb",
   );
+
   const response = fixtureResponse(
     "request-a",
     '{"id":"request-a","result":{"type":"ok"}}',
     true,
     "boot-a",
   );
+
   const decoded = Result.getOrThrow(decodeEndpointMessage(response.subarray(4)));
   expect(decoded).toMatchObject({
     kind: "response",
@@ -86,9 +91,11 @@ test("callback-owned endpoint decodes frozen projections, activates surfaces, ap
     Effect.scoped(
       Effect.gen(function* () {
         const endpoint = yield* startEndpointTestServer({ fragmented: true });
+
         const escaped = yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
+
             return yield* sdk.clientShell.withConnection(
               { ...geometry, socketPath: endpoint.socketPath, timeoutMs: 2000 },
               (shell) =>
@@ -103,16 +110,20 @@ test("callback-owned endpoint decodes frozen projections, activates surfaces, ap
                   const surface = yield* shell.surface.awaitReady();
                   expect(surface.frame.cells[0]?.symbol).toBe("x");
                   yield* endpoint.send(fixturePatch());
+
                   const patched = yield* shell.surface.states.pipe(
                     Stream.filter(
                       (state) => state.status === "active" && state.surface.surfaceRevision === 2,
                     ),
                     Stream.runHead,
                   );
+
                   expect(Option.isSome(patched)).toBe(true);
+
                   if (Option.isSome(patched) && patched.value.status === "active")
                     expect(patched.value.surface.frame.cells[0]?.symbol).toBe("y");
                   const command = projection.commands[0];
+
                   if (command === undefined)
                     return yield* Effect.die(new Error("Fixture command missing"));
                   yield* shell.commands.invokeInPane(command, sdk.ids.pane("w1:p1"));
@@ -127,11 +138,13 @@ test("callback-owned endpoint decodes frozen projections, activates surfaces, ap
                   ]);
                   yield* shell.surface.set({ active: false });
                   expect(yield* shell.surface.state()).toEqual({ status: "inactive" });
+
                   return shell;
                 }),
             );
           }),
         );
+
         yield* Queue.take(endpoint.closed);
         expect(yield* escaped.snapshot().pipe(Effect.flip)).toBeInstanceOf(HerdrEndpointClosed);
         expect(yield* escaped.connectionState()).toBe("closed");
@@ -148,22 +161,27 @@ test("endpoint callback failure and interruption both close the socket", (contex
         yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
+
             const failed = yield* sdk.clientShell
               .withConnection({ ...geometry, socketPath: endpoint.socketPath }, () =>
                 Effect.fail("callback-failure"),
               )
               .pipe(Effect.flip);
+
             expect(failed).toBe("callback-failure");
             yield* Queue.take(endpoint.closed);
             const entered = yield* Queue.make<void>();
+
             const fiber = yield* sdk.clientShell
               .withConnection({ ...geometry, socketPath: endpoint.socketPath }, () =>
                 Effect.gen(function* () {
                   yield* Queue.offer(entered, undefined);
+
                   return yield* Effect.never;
                 }),
               )
               .pipe(Effect.forkScoped);
+
             yield* Queue.take(entered);
             yield* Fiber.interrupt(fiber);
             yield* Queue.take(endpoint.closed);
@@ -179,14 +197,17 @@ test("a read-only projection stream owns and closes its inactive endpoint", (con
     Effect.scoped(
       Effect.gen(function* () {
         const endpoint = yield* startEndpointTestServer();
+
         const projections = yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
+
             return yield* sdk.clientShell
               .projections({ ...geometry, socketPath: endpoint.socketPath })
               .pipe(Stream.take(1), Stream.runCollect);
           }),
         );
+
         expect(projections.length).toBe(1);
         yield* Queue.take(endpoint.closed);
       }),
@@ -204,13 +225,16 @@ test("endpoint response chunks correlate independently and server rejections do 
               id: request.id,
               error: { code: "stale_release_notes", message: "fixture stale notes" },
             });
+
             const middle = Math.floor(json.length / 2);
+
             return Effect.succeed([
               fixtureResponse(request.id, json.slice(0, middle), false),
               fixtureResponse(request.id, json.slice(middle)),
             ]);
           },
         });
+
         yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
@@ -225,6 +249,7 @@ test("endpoint response chunks correlate independently and server rejections do 
                     ],
                     { concurrency: 2 },
                   );
+
                   for (const error of errors)
                     expect(error).toMatchObject({
                       _tag: "HerdrServerError",
@@ -273,16 +298,19 @@ test("invalid patch bases fail the connection rather than presenting corrupted c
         yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
+
             const error = yield* sdk.clientShell
               .withConnection({ ...geometry, socketPath: endpoint.socketPath }, (shell) =>
                 Effect.gen(function* () {
                   yield* shell.surface.set({ active: true });
                   yield* shell.surface.awaitReady();
                   yield* endpoint.send(fixturePatch(99));
+
                   return yield* shell.projections.pipe(Stream.runDrain);
                 }),
               )
               .pipe(Effect.flip);
+
             expect(error).toBeInstanceOf(HerdrEndpointInvalidMessage);
           }),
         );
@@ -297,9 +325,11 @@ test("silent endpoint health failures terminate a live stream with a typed deadl
     Effect.scoped(
       Effect.gen(function* () {
         const endpoint = yield* startEndpointTestServer({ health: false });
+
         const failure = yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
+
             return yield* sdk.clientShell
               .projections({
                 ...geometry,
@@ -310,6 +340,7 @@ test("silent endpoint health failures terminate a live stream with a typed deadl
               .pipe(Stream.runDrain, Effect.flip);
           }),
         );
+
         expect(failure).toBeInstanceOf(HerdrEndpointRequestTimeout);
         yield* Queue.take(endpoint.closed);
       }),
@@ -324,14 +355,17 @@ test("malformed initial snapshot closes acquisition before returning a handle", 
         const endpoint = yield* startEndpointTestServer({
           snapshot: { ...snapshotFixture, boot_id: "" },
         });
+
         const failure = yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
+
             return yield* sdk.clientShell
               .withConnection({ ...geometry, socketPath: endpoint.socketPath }, () => Effect.void)
               .pipe(Effect.flip);
           }),
         );
+
         expect(failure).toBeInstanceOf(HerdrEndpointInvalidMessage);
         yield* Queue.take(endpoint.closed);
       }),
@@ -364,6 +398,7 @@ test("surface acknowledgements do not present frames below their revision floor"
               ),
             ]),
         });
+
         yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
@@ -434,9 +469,11 @@ test.for(["correlation", "emptyChunk", "timeout"] as const)(
                     ],
               ),
           });
+
           const failure = yield* withSdk(
             Effect.gen(function* () {
               const sdk = yield* HerdrSdk;
+
               return yield* sdk.clientShell
                 .withConnection(
                   { ...geometry, socketPath: endpoint.socketPath, timeoutMs: 250 },
@@ -445,6 +482,7 @@ test.for(["correlation", "emptyChunk", "timeout"] as const)(
                 .pipe(Effect.flip);
             }),
           );
+
           expect(failure).toBeInstanceOf(
             mode === "timeout" ? HerdrEndpointRequestTimeout : HerdrEndpointInvalidMessage,
           );
@@ -460,9 +498,11 @@ test("health failure ends callback-owned sessions even when the callback is not 
     Effect.scoped(
       Effect.gen(function* () {
         const endpoint = yield* startEndpointTestServer({ health: false });
+
         const failure = yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
+
             return yield* sdk.clientShell
               .withConnection(
                 {
@@ -476,6 +516,7 @@ test("health failure ends callback-owned sessions even when the callback is not 
               .pipe(Effect.flip);
           }),
         );
+
         expect(failure).toBeInstanceOf(HerdrEndpointRequestTimeout);
         yield* Queue.take(endpoint.closed);
       }),
@@ -491,6 +532,7 @@ test("unknown optional named controls are ignored but malformed mandatory snapsh
         yield* withSdk(
           Effect.gen(function* () {
             const sdk = yield* HerdrSdk;
+
             const failure = yield* sdk.clientShell
               .withConnection({ ...geometry, socketPath: endpoint.socketPath }, (shell) =>
                 Effect.gen(function* () {
@@ -502,10 +544,12 @@ test("unknown optional named controls are ignored but malformed mandatory snapsh
                       fixtureText("{}"),
                     ]),
                   );
+
                   return yield* shell.projections.pipe(Stream.runDrain);
                 }),
               )
               .pipe(Effect.flip);
+
             expect(failure).toBeInstanceOf(HerdrEndpointInvalidMessage);
           }),
         );

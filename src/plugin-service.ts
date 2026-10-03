@@ -37,17 +37,29 @@ import {
 } from "./herdr-transport.ts";
 
 const parseInstalledPlugin = Schema.decodeUnknownEffect(InstalledPlugin);
+
 const parseInstalledPlugins = Schema.decodeUnknownEffect(Schema.Array(InstalledPlugin));
+
 const parsePluginActionInvocation = Schema.decodeUnknownEffect(PluginActionInvocation);
+
 const parsePluginActions = Schema.decodeUnknownEffect(Schema.Array(PluginAction));
+
 const parsePluginCommandLogs = Schema.decodeUnknownEffect(Schema.Array(PluginCommandLog));
+
 const parsePluginFilterInput = Schema.decodeEffect(PluginFilterInput);
+
 const parsePluginActionInvokeInput = Schema.decodeEffect(PluginActionInvokeInput);
+
 const parsePluginLinkInput = Schema.decodeEffect(PluginLinkInput);
+
 const parsePluginLogListInput = Schema.decodeEffect(PluginLogListInput);
+
 const parsePluginPane = Schema.decodeUnknownEffect(PluginPane);
+
 const parsePluginPaneCloseResult = Schema.decodeUnknownEffect(PluginPaneCloseResult);
+
 const parsePluginPaneOpenInput = Schema.decodeEffect(PluginPaneOpenInput);
+
 const parsePluginUnlinkResult = Schema.decodeUnknownEffect(PluginUnlinkResult);
 
 /**
@@ -210,6 +222,7 @@ export const makePluginService = Effect.gen(function* () {
         parsePluginPaneOpenInput,
         input,
       );
+
       const base = {
         pluginId,
         entrypoint: parsed.entrypoint,
@@ -221,18 +234,23 @@ export const makePluginService = Effect.gen(function* () {
         direction: Option.getOrNull(parsed.direction),
         cwd: Option.getOrNull(parsed.cwd),
       };
+
       const withEnv = Option.match(parsed.env, {
         onNone: () => base,
         onSome: (env) => ({ ...base, env }),
       });
+
       const parameters = Option.match(parsed.focus, {
         onNone: () => withEnv,
         onSome: (focus) => ({ ...withEnv, focus }),
       });
+
       const response = yield* transport.request("plugin.pane.open", parameters, options);
       const placement = Option.getOrUndefined(parsed.placement);
+
       if (placement === "popup") {
         if (response.result.type === "ok") return;
+
         return yield* new HerdrUnsupportedResult(
           "plugin.pane.open",
           response.result.type,
@@ -240,6 +258,7 @@ export const makePluginService = Effect.gen(function* () {
           response.requestId,
         );
       }
+
       if (placement !== undefined && response.result.type === "ok") {
         return yield* new HerdrUnsupportedResult(
           "plugin.pane.open",
@@ -248,7 +267,9 @@ export const makePluginService = Effect.gen(function* () {
           response.requestId,
         );
       }
+
       if (response.result.type === "ok") return;
+
       return yield* decodeHerdrWire(
         parsePluginPane,
         response.result.plugin_pane,
@@ -265,11 +286,13 @@ export const makePluginService = Effect.gen(function* () {
           parsePluginFilterInput,
           input,
         );
+
         const response = yield* transport.request(
           "plugin.action.list",
           { pluginId: Option.getOrNull(parsed.pluginId) },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePluginActions,
           response.result.actions,
@@ -284,10 +307,12 @@ export const makePluginService = Effect.gen(function* () {
           parsePluginActionInvokeInput,
           input,
         );
+
         const context = Option.match(parsed.context, {
           onNone: () => null,
           onSome: encodePluginInvocationContext,
         });
+
         const response = yield* transport.request(
           "plugin.action.invoke",
           {
@@ -297,6 +322,7 @@ export const makePluginService = Effect.gen(function* () {
           },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePluginActionInvocation,
           response.result,
@@ -314,6 +340,7 @@ export const makePluginService = Effect.gen(function* () {
           parsePluginLogListInput,
           input,
         );
+
         const response = yield* transport.request(
           "plugin.log.list",
           {
@@ -322,6 +349,7 @@ export const makePluginService = Effect.gen(function* () {
           },
           options,
         );
+
         return yield* decodeHerdrWire(
           parsePluginCommandLogs,
           response.result.logs,
@@ -336,6 +364,7 @@ export const makePluginService = Effect.gen(function* () {
     focus: defineHerdrOperation("PluginService.panes.focus", (paneId, options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("plugin.pane.focus", { paneId }, options);
+
         return yield* decodeHerdrWire(
           parsePluginPane,
           response.result.plugin_pane,
@@ -346,6 +375,7 @@ export const makePluginService = Effect.gen(function* () {
     close: defineHerdrOperation("PluginService.panes.close", (paneId, options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("plugin.pane.close", { paneId }, options);
+
         return yield* decodeHerdrWire(
           parsePluginPaneCloseResult,
           response.result,
@@ -364,6 +394,7 @@ export const makePluginService = Effect.gen(function* () {
     ) =>
       Effect.gen(function* () {
         const response = yield* transport.request(method, { pluginId: id }, options);
+
         return yield* decodeHerdrWire(
           parseInstalledPlugin,
           response.result.plugin,
@@ -379,16 +410,21 @@ export const makePluginService = Effect.gen(function* () {
     link: defineHerdrOperation("PluginService.link", (input, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PluginService.link", parsePluginLinkInput, input);
+
         const source = Option.match(parsed.source, {
           onNone: () => null,
           onSome: encodePluginSourceInput,
         });
+
         const base = { path: parsed.path, source };
+
         const parameters = Option.match(parsed.enabled, {
           onNone: () => base,
           onSome: (enabled) => ({ ...base, enabled }),
         });
+
         const response = yield* transport.request("plugin.link", parameters, options);
+
         return yield* decodeHerdrWire(
           parseInstalledPlugin,
           response.result.plugin,
@@ -399,11 +435,13 @@ export const makePluginService = Effect.gen(function* () {
     list: defineHerdrOperation("PluginService.list", (input = {}, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("PluginService.list", parsePluginFilterInput, input);
+
         const response = yield* transport.request(
           "plugin.list",
           { pluginId: Option.getOrNull(parsed.pluginId) },
           options,
         );
+
         return yield* decodeHerdrWire(
           parseInstalledPlugins,
           response.result.plugins,
@@ -414,6 +452,7 @@ export const makePluginService = Effect.gen(function* () {
     unlink: defineHerdrOperation("PluginService.unlink", (id, options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("plugin.unlink", { pluginId: id }, options);
+
         return yield* decodeHerdrWire(parsePluginUnlinkResult, response.result, response.requestId);
       }),
     ),
@@ -482,6 +521,7 @@ function encodePluginSourceInput(
     managedPath: Option.getOrNull(source.managedPath),
     installedUnixMs: Option.getOrNull(source.installedUnixMs),
   };
+
   return Option.match(source.kind, {
     onNone: () => base,
     onSome: (kind) => ({ ...base, kind }),

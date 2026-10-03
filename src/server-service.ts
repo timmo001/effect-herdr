@@ -27,10 +27,15 @@ import {
 } from "./herdr-transport.ts";
 
 const parseAgentManifests = Schema.decodeUnknownEffect(Schema.Array(AgentManifest));
+
 const parseAgentManifestStatus = Schema.decodeUnknownEffect(AgentManifestStatus);
+
 const parseConfigReloadResult = Schema.decodeUnknownEffect(ConfigReloadResult);
+
 const parsePingResult = Schema.decodeUnknownEffect(PingResult);
+
 const parseServerLiveHandoffInput = Schema.decodeEffect(ServerLiveHandoffInput);
+
 const parseServerSshAgentRegisterInput = Schema.decodeEffect(ServerSshAgentRegisterInput);
 
 /**
@@ -116,6 +121,7 @@ export const makeServerService = Effect.gen(function* () {
     ping: defineHerdrOperation("ServerService.ping", (options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("ping", {}, options);
+
         return yield* decodeHerdrWire(parsePingResult, response.result, response.requestId);
       }),
     ),
@@ -129,6 +135,7 @@ export const makeServerService = Effect.gen(function* () {
           parseServerLiveHandoffInput,
           input,
         );
+
         yield* transport.request(
           "server.live_handoff",
           {
@@ -143,12 +150,14 @@ export const makeServerService = Effect.gen(function* () {
     reloadConfig: defineHerdrOperation("ServerService.reloadConfig", (options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("server.reload_config", {}, options);
+
         return yield* decodeHerdrWire(parseConfigReloadResult, response.result, response.requestId);
       }),
     ),
     getAgentManifests: defineHerdrOperation("ServerService.getAgentManifests", (options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("server.agent_manifests", {}, options);
+
         return yield* decodeHerdrWire(
           parseAgentManifestStatus,
           response.result,
@@ -161,6 +170,7 @@ export const makeServerService = Effect.gen(function* () {
       (options = {}) =>
         Effect.gen(function* () {
           const response = yield* transport.request("server.reload_agent_manifests", {}, options);
+
           return yield* decodeHerdrWire(
             parseAgentManifests,
             response.result.manifests,
@@ -177,11 +187,13 @@ export const makeServerService = Effect.gen(function* () {
             parseServerSshAgentRegisterInput,
             input,
           );
+
           const opened = yield* transport.openStream(
             "server.ssh_agent.register",
             { socketPath: parsed.socketPath },
             options,
           );
+
           return { requestId: opened.requestId, closed: Stream.runDrain(opened.readBytes) };
         }),
     ),

@@ -56,20 +56,31 @@ import {
 } from "./herdr-transport.ts";
 
 const MAX_EVENT_LINE_BYTES = 1024 * 1024;
+
 // Decode complete bounded lines; preserve BOMs so JSON parsing rejects them.
 const eventUtf8Decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+
 const HerdrEventEnvelopeProbe = Schema.Struct({ event: Schema.String });
+
 const parseHerdrEventEnvelopeProbe = Schema.decodeUnknownOption(HerdrEventEnvelopeProbe);
+
 const parseHerdrEventResult = Schema.decodeUnknownResult(HerdrEvent);
+
 const lifecycleEventKinds = new Set(herdrApiSchema.schemas.event.$defs.EventKind.enum);
+
 const supportedEventKinds = new Set([
   ...lifecycleEventKinds,
   ...herdrApiSchema.schemas.subscription_event.$defs.SubscriptionEventKind.enum,
 ]);
+
 const encodeEventSubscriptionSpec = Schema.encodeEffect(EventSubscriptionSpec);
+
 const parseEventMatch = Schema.decodeEffect(EventMatch);
+
 const parseEventSubscriptionSpec = Schema.decodeEffect(EventSubscriptionSpec);
+
 const parseEventWaitInput = Schema.decodeEffect(EventWaitInput);
+
 const parseHerdrEvent = Schema.decodeUnknownEffect(HerdrEvent);
 
 /**
@@ -125,13 +136,16 @@ export const makeEventService = Effect.gen(function* () {
         Effect.gen(function* () {
           // Unlike Channel.withSpan, this span ends after scope finalizers on failure too.
           const lifetimeSpan = yield* Effect.makeSpanScoped("EventService.subscribe");
+
           return Stream.unwrap(
             Effect.gen(function* () {
               // Copy before yielding: parsing and type selection must see the same input,
               // even if the caller changes its array or objects while the socket opens.
               const snapshots = subscriptions.map((subscription) => ({ ...subscription }));
+
               const selectedTypes: ReadonlyArray<(typeof subscriptions)[number]["type"]> =
                 snapshots.map((subscription) => subscription.type);
+
               const parsedSubscriptions = yield* Effect.forEach(snapshots, (subscription) =>
                 decodeHerdrInput(
                   "EventService.subscribe",
@@ -139,10 +153,12 @@ export const makeEventService = Effect.gen(function* () {
                   subscription,
                 ),
               );
+
               const encodedSubscriptions = yield* Effect.forEach(
                 parsedSubscriptions,
                 (subscription) => encodeEventSubscriptionSpec(subscription).pipe(Effect.orDie),
               );
+
               const bytesCount = yield* Ref.make(0);
               const eventsCount = yield* Ref.make(0);
               // Registered before socket acquisition: report close only after its cleanup.
@@ -153,11 +169,13 @@ export const makeEventService = Effect.gen(function* () {
                     : Exit.hasInterrupts(exit)
                       ? "interrupted"
                       : "failure";
+
                   const attributes = {
                     "herdr.outcome": outcome,
                     "herdr.bytes.count": yield* Ref.get(bytesCount),
                     "herdr.events.count": yield* Ref.get(eventsCount),
                   };
+
                   for (const [key, value] of Object.entries(attributes))
                     lifetimeSpan.attribute(key, value);
                   lifetimeSpan.event(
@@ -167,12 +185,15 @@ export const makeEventService = Effect.gen(function* () {
                   );
                 }),
               );
+
               const opened = yield* transport.openStream(
                 "events.subscribe",
                 { subscriptions: encodedSubscriptions },
                 options,
               );
+
               lifetimeSpan.event("herdr.subscription.accepted", yield* Clock.currentTimeNanos);
+
               const countedBytes = opened.readBytes.pipe(
                 Stream.tap((bytes) =>
                   Ref.update(bytesCount, (count) =>
@@ -180,6 +201,7 @@ export const makeEventService = Effect.gen(function* () {
                   ),
                 ),
               );
+
               return decodeHerdrEventStream(countedBytes, opened.requestId, selectedTypes).pipe(
                 Stream.tap(() =>
                   Ref.update(eventsCount, (count) => Math.min(1_000_000_000, count + 1)),
@@ -193,16 +215,19 @@ export const makeEventService = Effect.gen(function* () {
       Effect.gen(function* () {
         const snapshot = { ...match };
         const selectedType: (typeof match)["type"] = snapshot.type;
+
         const parsedMatch = yield* decodeHerdrInput(
           "EventService.wait.match",
           parseEventMatch,
           snapshot,
         );
+
         const parsedInput = yield* decodeHerdrInput(
           "EventService.wait",
           parseEventWaitInput,
           input,
         );
+
         const response = yield* transport.request(
           "events.wait",
           {
@@ -211,12 +236,15 @@ export const makeEventService = Effect.gen(function* () {
           },
           options,
         );
+
         const event = yield* decodeHerdrWire(
           parseHerdrEvent,
           response.result.event.data,
           response.requestId,
         );
+
         if (isEventForMatch(event, selectedType)) return event;
+
         return yield* new HerdrInvalidResponse(
           "schema_mismatch",
           response.requestId,
@@ -257,11 +285,13 @@ function decodeEventLine(
     try: () => JSON.parse(eventUtf8Decoder.decode(bytes)),
     catch: (cause) => new HerdrInvalidResponse("malformed_json", requestId, cause),
   });
+
   if (Result.isFailure(parsedJson)) return parsedJson;
 
   // Herdr ends a subscription with an error line, such as events_lost, after it falls behind.
   if (isHerdrWireErrorResponse(parsedJson.success)) {
     const { code, message } = parsedJson.success.error;
+
     return Result.fail(new HerdrServerError(code, message, requestId));
   }
 
@@ -269,14 +299,17 @@ function decodeEventLine(
     try: () => parseHerdrWireEvent(parsedJson.success, requestId),
     catch: (cause) => {
       const probe = parseHerdrEventEnvelopeProbe(parsedJson.success);
+
       return Option.isSome(probe) && !supportedEventKinds.has(probe.value.event)
         ? new HerdrUnsupportedEvent(probe.value.event, requestId)
         : new HerdrInvalidResponse("schema_mismatch", requestId, cause);
     },
   });
+
   if (Result.isFailure(parsedEnvelope)) return Result.fail(parsedEnvelope.failure);
 
   const envelope = parsedEnvelope.success;
+
   // The wire schema validates these discriminants independently, not their agreement.
   if (lifecycleEventKinds.has(envelope.event) && envelope.event !== envelope.data.type) {
     return Result.fail(
@@ -305,6 +338,7 @@ function decodeHerdrEventStream<const Type extends EventSubscriptionSpec["type"]
     Stream.map((value) => ({ _tag: "Bytes", value }) as const),
     Stream.concat(Stream.succeed({ _tag: "End" } as const)),
   );
+
   return inputs.pipe(
     Stream.mapAccumArray(makeHerdrSocketLineBuffer, (state, input) =>
       parseHerdrEventChunks(state, input, requestId, selectedTypes),
@@ -351,26 +385,35 @@ function parseHerdrEventChunks<const Type extends EventSubscriptionSpec["type"]>
           ),
         );
       }
+
       return [makeHerdrSocketLineBuffer(), decodedEvents];
     }
 
     let remaining: readonly Uint8Array[] = [input.value];
+
     while (remaining.length > 0) {
       // Preserve the valid prefix even when a later line in this read exceeds the limit.
       const split = splitHerdrSocketLines(state, remaining, MAX_EVENT_LINE_BYTES, requestId, 1);
+
       if (Result.isFailure(split)) {
         decodedEvents.push(Result.fail(split.failure));
+
         return [makeHerdrSocketLineBuffer(), decodedEvents];
       }
+
       state = split.success.buffer;
       remaining = split.success.remainder;
+
       for (const line of split.success.lines) {
         if (line.length === 0) continue;
         const decoded = decodeEventLine(line, requestId);
+
         if (Result.isFailure(decoded)) {
           decodedEvents.push(Result.fail(decoded.failure));
+
           return [makeHerdrSocketLineBuffer(), decodedEvents];
         }
+
         if (isEventForSubscriptions(decoded.success, selectedTypes)) {
           decodedEvents.push(Result.succeed(decoded.success));
         }

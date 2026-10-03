@@ -88,8 +88,11 @@ import {
 } from "./herdr-client-shell-input.ts";
 
 const PositiveU16 = Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 65535 }));
+
 const PixelSize = Schema.Natural.check(Schema.isLessThanOrEqualTo(0xffff_ffff));
+
 const Deadline = Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 2147483647 }));
+
 /** Geometry and resource bounds for one explicit endpoint session. @category schemas @since 0.9.0 */
 export const ClientShellConnectInput = Schema.Struct({
   socketPath: Schema.optionalKey(HerdrAbsolutePath),
@@ -104,38 +107,59 @@ export const ClientShellConnectInput = Schema.Struct({
     Schema.Int.check(Schema.isBetween({ minimum: 1024, maximum: 32 * 1024 * 1024 })),
   ),
 });
+
 /** Parsed endpoint connection options. @category models @since 0.9.0 */
 export type ClientShellConnectInput = typeof ClientShellConnectInput.Type;
+
 /** Caller-supplied endpoint geometry; socketPath denotes herdr-client.sock, not herdr.sock. @category inputs @since 0.9.0 */
 export type ClientShellConnectInputEncoded = typeof ClientShellConnectInput.Encoded;
+
 /** Connection acquisition also checks the SDK's protocol-22 baseline on the configured API socket. @category errors @since 0.9.0 */
 export type HerdrEndpointConnectError = HerdrTransportRequestError | EndpointRequestError;
+
 /** Domain operation failures for one live endpoint connection. @category errors @since 0.9.0 */
 export type ClientShellOperationError =
   EndpointRequestError | HerdrInvalidInput | HerdrEndpointStaleReference;
 
 const parseConnect = Schema.decodeEffect(ClientShellConnectInput, { onExcessProperty: "error" });
+
 const parseProjection = Schema.decodeEffect(Schema.fromJsonString(ClientShellProjection));
+
 const parseSurface = Schema.decodeEffect(ClientShellSurface);
+
 const parsePresentationEvent = Schema.decodeEffect(ClientShellPresentationEvent);
+
 const parseKey = Schema.decodeEffect(ClientShellKeyInput, { onExcessProperty: "error" });
+
 const parseMouse = Schema.decodeEffect(ClientShellMouseInput, { onExcessProperty: "error" });
+
 const parsePatch = Schema.decodeEffect(ClientShellSurfacePatch);
+
 const parseAcknowledgement = Schema.decodeEffect(ClientShellSurfaceAcknowledgement);
+
 const parsePaneCommand = Schema.decodeEffect(CommandPaneInput, { onExcessProperty: "error" });
+
 const parseTabCommand = Schema.decodeEffect(CommandTabInput, { onExcessProperty: "error" });
+
 const parseAnnouncement = Schema.decodeEffect(ProductAnnouncementDismissInput, {
   onExcessProperty: "error",
 });
+
 const parseNotes = Schema.decodeEffect(ReleaseNotesDismissInput, { onExcessProperty: "error" });
+
 const SurfaceSetInput = Schema.Struct({ active: Schema.Boolean });
+
 const parseSurfaceSet = Schema.decodeEffect(SurfaceSetInput, { onExcessProperty: "error" });
+
 const TextInput = Schema.Struct({ text: Schema.String.check(Schema.isMaxLength(1_000_000)) });
+
 const parseText = Schema.decodeEffect(TextInput, { onExcessProperty: "error" });
+
 const ResizeInput = Schema.Struct({
   surface: ClientShellConnectInput.fields.surface,
   cellPixels: ClientShellConnectInput.fields.cellPixels,
 });
+
 const parseResize = Schema.decodeEffect(ResizeInput, { onExcessProperty: "error" });
 
 /** Scoped endpoint handle; using it after its callback/Scope ends fails rather than reopening. @category services @since 0.9.0 */
@@ -258,6 +282,7 @@ export interface ClientShellConnection {
   /** Waits until the connection fails or its owner closes it, preserving the termination reason. */
   readonly awaitClosed: () => Effect.Effect<never, HerdrEndpointFailure>;
 }
+
 /** Client-shell acquisition is lazy; ordinary SDK construction opens no endpoint. @category services @since 0.9.0 */
 export interface IClientShellService {
   /** Owns a connection for the callback and preserves callback errors and requirements. */
@@ -274,6 +299,7 @@ export interface IClientShellService {
     input: ClientShellConnectInputEncoded,
   ) => Stream.Stream<ClientShellProjection, HerdrEndpointConnectError>;
 }
+
 /** Yieldable client-shell endpoint capability. @category services @since 0.9.0 */
 export class ClientShellService extends Context.Service<ClientShellService, IClientShellService>()(
   "@herdr/sdk/ClientShellService",
@@ -283,6 +309,7 @@ export class ClientShellService extends Context.Service<ClientShellService, ICli
 export const makeClientShellService = Effect.gen(function* () {
   const config = yield* HerdrConfig;
   const transport = yield* HerdrTransport;
+
   const acquire = (input: ClientShellConnectInputEncoded) =>
     Effect.gen(function* () {
       const parsed = yield* decodeHerdrInput(
@@ -290,9 +317,11 @@ export const makeClientShellService = Effect.gen(function* () {
         parseConnect,
         input,
       );
+
       yield* transport.request("ping", {});
       const timeoutMs = parsed.timeoutMs ?? 10_000;
       const maximumBytes = parsed.maximumMessageBytes ?? 32 * 1024 * 1024;
+
       const wire = yield* acquireEndpointConnection({
         socketPath: parsed.socketPath ?? join(dirname(config.socketPath), "herdr-client.sock"),
         timeoutMs,
@@ -314,6 +343,7 @@ export const makeClientShellService = Effect.gen(function* () {
           blob_codecs: ["shell.blob.v1"],
         }),
       });
+
       const firstProjection = yield* Deferred.make<ClientShellProjection, HerdrEndpointFailure>();
       const projectionChanges = yield* PubSub.sliding<ClientShellProjection>(1);
       const surfaceChanges = yield* PubSub.sliding<ClientShellSurfaceState>(1);
@@ -331,27 +361,34 @@ export const makeClientShellService = Effect.gen(function* () {
       let surfaceState: ClientShellSurfaceState = { status: "inactive" };
       let commands = new WeakSet<ClientShellCommand>();
       let healthPong: Deferred.Deferred<void> | undefined;
+
       const publishSurface = (state: ClientShellSurfaceState) =>
         Effect.gen(function* () {
           surfaceState = state;
           yield* PubSub.publish(surfaceChanges, state);
         });
+
       const acceptSurface = (surface: ClientShellSurface) =>
         Effect.gen(function* () {
           if (currentProjection === undefined || surface.bootId !== currentProjection.bootId)
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("revision"));
+
           if (surface.projectionRevision > currentProjection.revision)
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("revision"));
+
           if (
             currentSurface !== undefined &&
             surface.surfaceRevision <= currentSurface.surfaceRevision
           )
             return;
+
           const complete = yield* Result.match(
             retainClientShellGraphics(currentSurface, surface, maximumBytes),
             { onFailure: Effect.fail, onSuccess: Effect.succeed },
           );
+
           currentSurface = complete;
+
           if (
             (surfaceState.status === "active" || surfaceState.status === "awaitingSurface") &&
             surface.projectionRevision >= surfaceState.projectionFloor
@@ -364,24 +401,30 @@ export const makeClientShellService = Effect.gen(function* () {
             });
           }
         });
+
       yield* wire.installHandler((message) =>
         Effect.gen(function* () {
           if (message.kind === "control") {
             if (message.name === "endpoint.health.pong.v1") {
               if (healthPong !== undefined) yield* Deferred.succeed(healthPong, undefined);
+
               return;
             }
+
             if (message.name === "shell.snapshot.v1") {
               const projection = yield* parseProjection(message.data).pipe(
                 Effect.mapError(() => new HerdrEndpointInvalidMessage("schema")),
               );
+
               yield* wire.bindBoot(projection.bootId);
+
               if (
                 currentProjection !== undefined &&
                 projection.revision <= currentProjection.revision
               )
                 return;
               currentProjection = projection;
+
               if (
                 surfaceState.status === "active" &&
                 surfaceState.surface.projectionRevision < projection.revision
@@ -392,45 +435,59 @@ export const makeClientShellService = Effect.gen(function* () {
                   projectionFloor: projection.revision,
                 });
               }
+
               for (const command of projection.commands) commands.add(command);
               yield* Deferred.succeed(firstProjection, projection);
               yield* PubSub.publish(projectionChanges, projection);
+
               return;
             }
+
             if (message.name.startsWith("shell.snapshot."))
               return yield* Effect.fail(new HerdrEndpointInvalidMessage("unsupported_message"));
+
             return; // Unknown optional named controls are explicitly ignorable in generation 1.
           }
+
           if (message.kind === "surface") {
             const surface = yield* parseSurface(message.surface).pipe(
               Effect.mapError(() => new HerdrEndpointInvalidMessage("schema")),
             );
+
             return yield* acceptSurface(surface);
           }
+
           if (message.kind === "patch") {
             const patch = yield* parsePatch(message.patch).pipe(
               Effect.mapError(() => new HerdrEndpointInvalidMessage("schema")),
             );
+
             if (currentSurface === undefined)
               return yield* Effect.fail(new HerdrEndpointInvalidMessage("revision"));
+
             const surface = yield* Result.match(
               applyClientShellSurfacePatch(currentSurface, patch),
               { onFailure: Effect.fail, onSuccess: Effect.succeed },
             );
+
             return yield* acceptSurface(surface);
           }
+
           // Direct file delivery is not negotiated; never read arbitrary server-supplied paths.
           if (message.kind === "graphicsFile")
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("unsupported_message"));
+
           if (
             message.kind === "shutdown" ||
             message.kind === "response" ||
             message.kind === "graphicsRetired"
           )
             return;
+
           const event = yield* parsePresentationEvent(message).pipe(
             Effect.mapError(() => new HerdrEndpointInvalidMessage("schema")),
           );
+
           if (!(yield* PubSub.publish(presentationEvents, event)))
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("resource_limit"));
         }),
@@ -442,27 +499,34 @@ export const makeClientShellService = Effect.gen(function* () {
           orElse: () => Effect.fail(new HerdrEndpointRequestTimeout("connect")),
         }),
       );
+
       const projections = Stream.unwrap(
         Effect.gen(function* () {
           yield* wire.ensureHealthy;
           const subscription = yield* PubSub.subscribe(projectionChanges);
+
           if (currentProjection === undefined) return yield* Effect.fail(new HerdrEndpointClosed());
+
           return Stream.concat(
             Stream.make(currentProjection),
             Stream.fromSubscription(subscription),
           );
         }),
       ).pipe(Stream.interruptWhen(wire.failure));
+
       const surfaceStates = Stream.unwrap(
         Effect.gen(function* () {
           yield* wire.ensureHealthy;
           const subscription = yield* PubSub.subscribe(surfaceChanges);
+
           return Stream.concat(Stream.make(surfaceState), Stream.fromSubscription(subscription));
         }),
       ).pipe(Stream.interruptWhen(wire.failure));
+
       const assertCommand = (command: ClientShellCommand) =>
         Effect.gen(function* () {
           yield* wire.ensureOpen;
+
           if (
             !commands.has(command) ||
             command.action === "unknown" ||
@@ -470,6 +534,7 @@ export const makeClientShellService = Effect.gen(function* () {
           )
             return yield* Effect.fail(new HerdrEndpointStaleReference());
         });
+
       const sendText = (
         target: "pane" | "popup",
         id: string,
@@ -482,13 +547,16 @@ export const makeClientShellService = Effect.gen(function* () {
             parseText,
             input,
           );
+
           yield* wire.write(() => encodeEndpointText(target, id, parsedText.text, mode));
         });
+
       const sendKey = (target: "pane" | "popup", id: string, input: ClientShellKeyInputEncoded) =>
         Effect.gen(function* () {
           const key = yield* decodeHerdrInput("ClientShellConnection.input.key", parseKey, input);
           yield* wire.write(() => encodeEndpointKey(target, id, key));
         });
+
       const sendMouse = (
         target: "pane" | "popup",
         id: string,
@@ -500,9 +568,12 @@ export const makeClientShellService = Effect.gen(function* () {
             parseMouse,
             input,
           );
+
           yield* wire.write(() => encodeEndpointMouse(target, id, mouse));
         });
+
       const parseBoolean = Schema.decodeEffect(Schema.Boolean);
+
       const preference = (name: "focus" | "mouseCapture", input: boolean) =>
         Effect.gen(function* () {
           const value = yield* decodeHerdrInput(
@@ -510,14 +581,18 @@ export const makeClientShellService = Effect.gen(function* () {
             parseBoolean,
             input,
           );
+
           yield* wire.write(() => encodeEndpointPreference(name, value));
         });
+
       const connection: ClientShellConnection = {
         snapshot: () =>
           Effect.gen(function* () {
             yield* wire.ensureOpen;
+
             if (currentProjection === undefined)
               return yield* Effect.fail(new HerdrEndpointClosed());
+
             return currentProjection;
           }),
         projections,
@@ -531,11 +606,14 @@ export const makeClientShellService = Effect.gen(function* () {
                   parseSurfaceSet,
                   input,
                 );
+
                 yield* wire.ensureOpen;
+
                 if (currentProjection === undefined)
                   return yield* Effect.fail(new HerdrEndpointClosed());
                 const previousState = surfaceState;
                 yield* publishSurface({ status: interest.active ? "activating" : "deactivating" });
+
                 const response = yield* wire.request("client_shell.surface.set", interest).pipe(
                   Effect.tapError((error) => {
                     // A definite rejection leaves interest unchanged; uncertain outcomes invalidate the session.
@@ -544,6 +622,7 @@ export const makeClientShellService = Effect.gen(function* () {
                       error._tag !== "HerdrEndpointUnsupportedMethod"
                     )
                       return wire.fail(new HerdrEndpointInvalidMessage("schema"));
+
                     return publishSurface(
                       previousState.status === "active" &&
                         currentProjection !== undefined &&
@@ -557,20 +636,26 @@ export const makeClientShellService = Effect.gen(function* () {
                     );
                   }),
                 );
+
                 const acknowledgement = yield* parseAcknowledgement(response.result).pipe(
                   Effect.mapError(() => new HerdrEndpointInvalidMessage("schema")),
                 );
+
                 if (acknowledgement.active !== interest.active)
                   return yield* Effect.fail(new HerdrEndpointInvalidMessage("revision"));
+
                 if (!interest.active) {
                   yield* publishSurface({ status: "inactive" });
+
                   return acknowledgement;
                 }
+
                 yield* publishSurface({
                   status: "awaitingSurface",
                   bootId: currentProjection.bootId,
                   projectionFloor: acknowledgement.projectionRevision,
                 });
+
                 if (
                   currentSurface !== undefined &&
                   currentSurface.projectionRevision >= acknowledgement.projectionRevision
@@ -582,6 +667,7 @@ export const makeClientShellService = Effect.gen(function* () {
                     surface: currentSurface,
                   });
                 }
+
                 return acknowledgement;
               }).pipe(
                 Effect.tapError((error) =>
@@ -592,6 +678,7 @@ export const makeClientShellService = Effect.gen(function* () {
           state: () =>
             Effect.gen(function* () {
               yield* wire.ensureOpen;
+
               return surfaceState;
             }),
           states: surfaceStates,
@@ -620,6 +707,7 @@ export const makeClientShellService = Effect.gen(function* () {
                 parseResize,
                 input,
               );
+
               yield* wire.write(() =>
                 encodeEndpointResize(
                   size.surface.columns,
@@ -655,11 +743,13 @@ export const makeClientShellService = Effect.gen(function* () {
           invokeInTab: (command, tabId, input = {}) =>
             Effect.gen(function* () {
               yield* assertCommand(command);
+
               const target = yield* decodeHerdrInput(
                 "ClientShellConnection.commands.invokeInTab",
                 parseTabCommand,
                 input,
               );
+
               yield* wire.request("command.invoke", {
                 commandId: command.commandId,
                 tabId,
@@ -671,11 +761,13 @@ export const makeClientShellService = Effect.gen(function* () {
           invokeInPane: (command, paneId, input = {}) =>
             Effect.gen(function* () {
               yield* assertCommand(command);
+
               const target = yield* decodeHerdrInput(
                 "ClientShellConnection.commands.invokeInPane",
                 parsePaneCommand,
                 input,
               );
+
               yield* wire.request("command.invoke", {
                 commandId: command.commandId,
                 paneId,
@@ -697,6 +789,7 @@ export const makeClientShellService = Effect.gen(function* () {
                 parseAnnouncement,
                 input,
               );
+
               yield* wire.request("product_announcement.dismiss", identity);
             }),
         },
@@ -708,6 +801,7 @@ export const makeClientShellService = Effect.gen(function* () {
                 parseNotes,
                 input,
               );
+
               yield* wire.request("release_notes.dismiss", identity);
             }),
         },
@@ -720,6 +814,7 @@ export const makeClientShellService = Effect.gen(function* () {
             Effect.catch(() => Effect.succeed("closed" as const)),
           ),
       };
+
       const health = Effect.gen(function* () {
         yield* Effect.sleep(parsed.healthIntervalMs ?? 10_000);
         const pong = yield* Deferred.make<void>();
@@ -733,6 +828,7 @@ export const makeClientShellService = Effect.gen(function* () {
         );
         healthPong = undefined;
       }).pipe(Effect.forever, Effect.raceFirst(wire.failure), Effect.catch(wire.fail));
+
       yield* health.pipe(Effect.forkScoped);
       yield* Effect.addFinalizer(() =>
         Effect.sync(() => {
@@ -742,14 +838,18 @@ export const makeClientShellService = Effect.gen(function* () {
           commands = new WeakSet();
         }),
       );
+
       if (parsed.initialSurface === "active") yield* connection.surface.set({ active: true });
+
       return connection;
     });
+
   const connectScoped = defineHerdrOperation(
     "ClientShellService.connectScoped",
     (input: ClientShellConnectInputEncoded) =>
       Effect.gen(function* () {
         const scope = yield* Scope.fork(yield* Scope.Scope);
+
         return yield* acquire(input).pipe(
           Scope.provide(scope),
           Effect.onExit((exit) =>
@@ -758,12 +858,14 @@ export const makeClientShellService = Effect.gen(function* () {
         );
       }),
   );
+
   return ClientShellService.of({
     connectScoped,
     withConnection: (input, use) =>
       Effect.scoped(
         Effect.gen(function* () {
           const connection = yield* connectScoped(input);
+
           return yield* use(connection).pipe(Effect.raceFirst(connection.awaitClosed()));
         }),
       ),
@@ -771,16 +873,19 @@ export const makeClientShellService = Effect.gen(function* () {
       Stream.unwrap(
         Effect.gen(function* () {
           const connection = yield* connectScoped({ ...input, initialSurface: "inactive" });
+
           return connection.projections;
         }),
       ),
   });
 });
+
 /** Provides lazy endpoint sessions with visible configuration and API transport dependencies. @category layers @since 0.9.0 */
 export const clientShellServiceLayerWithoutDependencies = Layer.effect(
   ClientShellService,
   makeClientShellService,
 );
+
 /** Production client-shell Layer; connections remain lazy and callback/stream owned. @category layers @since 0.9.0 */
 export const clientShellServiceLayer = clientShellServiceLayerWithoutDependencies.pipe(
   Layer.provide(herdrTransportLayer),

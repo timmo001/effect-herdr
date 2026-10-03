@@ -40,6 +40,8 @@ export const assertHerdrProperty = Effect.fnUntraced(function* <A, E, R>(
       ),
     options,
   );
+
   const failure = Arbitrary.formatCheckFailure(result);
+
   if (failure !== undefined) return yield* Effect.die(new Error(failure));
 });

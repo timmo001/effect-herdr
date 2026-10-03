@@ -21,7 +21,9 @@ interface HerdrTestAmbientConfig {
 }
 
 const configDirectory = join(tmpdir(), "herdr-config");
+
 const exactSocketPath = join(tmpdir(), "exact.sock");
+
 const explicitSocketPath = join(tmpdir(), "explicit.sock");
 
 test("ambient socket path takes precedence without decoding ignored session settings", (context) =>
@@ -34,6 +36,7 @@ test("ambient socket path takes precedence without decoding ignored session sett
         HERDR_CONFIG_DIR: "ignored-relative-directory",
         HERDR_REQUEST_TIMEOUT: "2 seconds",
       });
+
       expect(config.socketPath).toBe(exactSocketPath);
       expect(Option.isNone(config.session)).toBe(true);
       expect(Duration.toMillis(config.requestTimeout)).toBe(2_000);
@@ -48,6 +51,7 @@ test("ambient session resolves beneath the configured Herdr directory", (context
         HERDR_SESSION: "work",
         HERDR_CONFIG_DIR: configDirectory,
       });
+
       expect(config.socketPath).toBe(join(configDirectory, "sessions", "work", "herdr.sock"));
       expect(Option.getOrUndefined(config.session)).toBe("work");
       expect(Duration.toMillis(config.requestTimeout)).toBe(5_000);
@@ -70,6 +74,7 @@ test("explicit options take precedence over malformed ambient selectors", (conte
           application: { name: "config-test", version: "1.0.0" },
         },
       );
+
       const application = Option.getOrThrow(config.application);
       expect(config.socketPath).toBe(explicitSocketPath);
       expect(Duration.toMillis(config.requestTimeout)).toBe(3_000);
@@ -87,6 +92,7 @@ test("invalid selected ambient socket fails instead of falling through to a sess
         HERDR_SESSION: "valid-session",
         HERDR_CONFIG_DIR: configDirectory,
       }).pipe(Effect.flip);
+
       expect(error).toBeInstanceOf(HerdrConfigurationError);
       expect(error._tag).toBe("HerdrConfigurationError");
       expect(error.operation).toBe("loadHerdrConfig");
@@ -102,13 +108,16 @@ test("selected timeout strings retain deadline validation after duration decodin
           HERDR_SOCKET_PATH: exactSocketPath,
           HERDR_REQUEST_TIMEOUT: timeout,
         }).pipe(Effect.flip);
+
         expect(error).toBeInstanceOf(HerdrConfigurationError);
         expect(error.operation).toBe("loadHerdrConfig");
       }
+
       const config = yield* loadHerdrConfig({
         HERDR_SOCKET_PATH: exactSocketPath,
         HERDR_REQUEST_TIMEOUT: "0 seconds",
       });
+
       expect(Duration.toMillis(config.requestTimeout)).toBe(0);
     }),
   ));
@@ -121,6 +130,7 @@ test("encoded config options retain mutually exclusive socket and session valida
         {},
         { socketPath: explicitSocketPath, session: "valid-session" },
       ).pipe(Effect.flip);
+
       expect(error).toBeInstanceOf(HerdrConfigurationError);
       expect(error.operation).toBe("loadHerdrConfig");
     }),
@@ -133,10 +143,12 @@ test("configuration Layer exposes the resolved yieldable service", (context) =>
       const providerLayer = ConfigProvider.layer(
         ConfigProvider.fromUnknown({ HERDR_CONFIG_DIR: configDirectory }),
       );
+
       const config = yield* HerdrConfig.pipe(
         Effect.provide(herdrConfigLayerFromOptions({ session: "layer-session" })),
         Effect.provide(providerLayer),
       );
+
       expect(config.socketPath).toBe(
         join(configDirectory, "sessions", "layer-session", "herdr.sock"),
       );

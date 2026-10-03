@@ -6,6 +6,7 @@ const featureWorktree = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   const repositoryPath = herdr.ids.absolutePath(process.cwd());
   const branchName = process.argv[2] ?? "feature/herdr-sdk-example";
+
   const created = yield* herdr.worktrees.create({
     cwd: repositoryPath,
     branch: branchName,

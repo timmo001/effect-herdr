@@ -6,8 +6,11 @@
 import { Schema } from "effect";
 
 const U8 = Schema.Natural.check(Schema.isLessThanOrEqualTo(255));
+
 const U16 = Schema.Natural.check(Schema.isLessThanOrEqualTo(65535));
+
 const U32 = Schema.Natural.check(Schema.isLessThanOrEqualTo(0xffff_ffff));
+
 /** A named key, Unicode scalar, or function key for semantic endpoint input. @category schemas @since 0.9.0 */
 export const ClientShellKeyCode = Schema.Union([
   Schema.Struct({
@@ -43,8 +46,10 @@ export const ClientShellKeyCode = Schema.Union([
   }),
   Schema.Struct({ kind: Schema.Literal("function"), number: U8 }),
 ]);
+
 /** Parsed semantic key code. @category models @since 0.9.0 */
 export type ClientShellKeyCode = typeof ClientShellKeyCode.Type;
+
 /** Windows console key identity, when input originates from a native record. @category schemas @since 0.9.0 */
 export const ClientShellWindowsKeyRecord = Schema.Struct({
   keyDown: Schema.Boolean,
@@ -54,6 +59,7 @@ export const ClientShellWindowsKeyRecord = Schema.Struct({
   unicode: U16,
   controlKeyState: U32,
 });
+
 /** Semantic key lifecycle and optional native identity. @category schemas @since 0.9.0 */
 export const ClientShellKeyInput = Schema.Struct({
   code: ClientShellKeyCode,
@@ -66,10 +72,13 @@ export const ClientShellKeyInput = Schema.Struct({
   physicalKeyId: Schema.optionalKey(U32),
   windowsRecord: Schema.optionalKey(ClientShellWindowsKeyRecord),
 });
+
 /** Parsed semantic key event. @category models @since 0.9.0 */
 export type ClientShellKeyInput = typeof ClientShellKeyInput.Type;
+
 /** Caller-supplied semantic key event. @category inputs @since 0.9.0 */
 export type ClientShellKeyInputEncoded = typeof ClientShellKeyInput.Encoded;
+
 /** Mouse action, optionally identifying a button. @category schemas @since 0.9.0 */
 export const ClientShellMouseAction = Schema.Union([
   Schema.Struct({
@@ -80,11 +89,13 @@ export const ClientShellMouseAction = Schema.Union([
     action: Schema.Literals(["move", "scrollUp", "scrollDown", "scrollLeft", "scrollRight"]),
   }),
 ]);
+
 /** Mouse coordinates distinguish terminal cells from exact pixels. @category schemas @since 0.9.0 */
 export const ClientShellMousePosition = Schema.Union([
   Schema.Struct({ units: Schema.Literal("cells"), column: U16, row: U16 }),
   Schema.Struct({ units: Schema.Literal("pixels"), x: U32, y: U32, column: U16, row: U16 }),
 ]);
+
 /** Semantic mouse input with optional coherent target geometry. @category schemas @since 0.9.0 */
 export const ClientShellMouseInput = Schema.Struct({
   gesture: ClientShellMouseAction,
@@ -95,7 +106,9 @@ export const ClientShellMouseInput = Schema.Struct({
   modifiers: Schema.optionalKey(U8),
   lines: Schema.optionalKey(U16),
 });
+
 /** Parsed semantic mouse event. @category models @since 0.9.0 */
 export type ClientShellMouseInput = typeof ClientShellMouseInput.Type;
+
 /** Caller-supplied semantic mouse event. @category inputs @since 0.9.0 */
 export type ClientShellMouseInputEncoded = typeof ClientShellMouseInput.Encoded;

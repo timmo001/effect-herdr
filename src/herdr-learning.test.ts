@@ -35,15 +35,18 @@ test("sdk learning: request-wire-result", (context) =>
             : makeHerdrSuccessResponse(request),
         ),
       );
+
       const result = yield* runLearningSdk(
         server.socketPath,
         Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
+
           return yield* sdk.workspaces.get(sdk.ids.workspace("workspace-learning"), {
             requestId: "learning-request",
           });
         }),
       );
+
       expect(server.requests.find((request) => request.method === "workspace.get")).toEqual({
         id: "learning-request",
         method: "workspace.get",
@@ -65,13 +68,16 @@ test("sdk learning: compatibility-recovery", (context) =>
     context,
     Effect.gen(function* () {
       let pings = 0;
+
       const server = yield* startHerdrTestServer((request) =>
         Effect.sync(() => {
           if (request.method === "ping" && ++pings === 1)
             return new HerdrRawTestResponse("{broken\n");
+
           return makeHerdrSuccessResponse(request);
         }),
       );
+
       yield* runLearningSdk(
         server.socketPath,
         Effect.gen(function* () {
@@ -102,7 +108,9 @@ test("sdk learning: scoped-subscription", (context) =>
       const server = yield* startHerdrTestServer((request) =>
         Effect.sync(() => {
           const response = makeHerdrSuccessResponse(request);
+
           if (request.method !== "events.subscribe") return response;
+
           return new HerdrRawTestResponse(
             [
               JSON.stringify(response),
@@ -115,13 +123,16 @@ test("sdk learning: scoped-subscription", (context) =>
           );
         }),
       );
+
       yield* runLearningSdk(
         server.socketPath,
         Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
+
           const events = yield* sdk.events
             .subscribe([{ type: "workspace.created" }])
             .pipe(Stream.take(1), Stream.runCollect);
+
           expect(events).toHaveLength(1);
           expect(events[0]).toMatchObject({
             type: "workspace.created",
@@ -143,6 +154,7 @@ test("sdk learning: ssh-agent-lease", (context) =>
       const server = yield* startHerdrTestServer((request) =>
         Effect.succeed(makeHerdrSuccessResponse(request)),
       );
+
       yield* runLearningSdk(
         server.socketPath,
         Effect.gen(function* () {

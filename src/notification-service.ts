@@ -21,6 +21,7 @@ import {
 } from "./herdr-transport.ts";
 
 const parseNotificationShowInput = Schema.decodeEffect(NotificationShowInput);
+
 const parseNotificationShowResult = Schema.decodeUnknownEffect(NotificationShowResult);
 
 /**
@@ -56,6 +57,7 @@ export class NotificationService extends Context.Service<
  */
 export const makeNotificationService = Effect.gen(function* () {
   const transport = yield* HerdrTransport;
+
   return NotificationService.of({
     show: defineHerdrOperation("NotificationService.show", (input, options = {}) =>
       Effect.gen(function* () {
@@ -64,16 +66,20 @@ export const makeNotificationService = Effect.gen(function* () {
           parseNotificationShowInput,
           input,
         );
+
         const parametersWithoutSound = {
           title: parsed.title,
           body: Option.getOrNull(parsed.body),
           position: Option.getOrNull(parsed.position),
         };
+
         const parameters = Option.match(parsed.sound, {
           onNone: () => parametersWithoutSound,
           onSome: (sound) => ({ ...parametersWithoutSound, sound }),
         });
+
         const response = yield* transport.request("notification.show", parameters, options);
+
         return yield* decodeHerdrWire(
           parseNotificationShowResult,
           response.result,

@@ -15,12 +15,14 @@ test("plugin pane overloads reject server results that contradict placement", (c
         const server = yield* startHerdrTestServer((request) =>
           Effect.sync(() => {
             if (request.method !== "plugin.pane.open") return makeHerdrSuccessResponse(request);
+
             if (request.params.placement === "popup") {
               return makeHerdrSuccessResponse({
                 ...request,
                 params: { ...request.params, placement: "overlay" },
               });
             }
+
             return { id: request.id, result: { type: "ok" } };
           }),
         );
@@ -28,12 +30,15 @@ test("plugin pane overloads reject server results that contradict placement", (c
         const failures = yield* Effect.gen(function* () {
           const herdr = yield* HerdrSdk;
           const pluginId = herdr.ids.plugin("plugin-1");
+
           const popup = yield* herdr.plugins.panes
             .open(pluginId, { entrypoint: "future", placement: "popup" })
             .pipe(Effect.flip);
+
           const overlay = yield* herdr.plugins.panes
             .open(pluginId, { entrypoint: "future", placement: "overlay" })
             .pipe(Effect.flip);
+
           return { overlay, popup };
         }).pipe(
           Effect.provide(

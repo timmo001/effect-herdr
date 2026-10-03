@@ -27,11 +27,17 @@ import {
 } from "./herdr-transport.ts";
 
 const parseTab = Schema.decodeUnknownEffect(Tab);
+
 const parseTabs = Schema.decodeUnknownEffect(Schema.Array(Tab));
+
 const parseTabCreateInput = Schema.decodeEffect(TabCreateInput);
+
 const parseTabCreateResult = Schema.decodeUnknownEffect(TabCreateResult);
+
 const parseTabLabel = Schema.decodeEffect(Schema.String);
+
 const parseTabListInput = Schema.decodeEffect(TabListInput);
+
 const parseTabMoveInput = Schema.decodeEffect(TabMoveInput);
 
 /**
@@ -103,65 +109,78 @@ export const makeTabService = Effect.gen(function* () {
     create: defineHerdrOperation("TabService.create", (input = {}, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("TabService.create", parseTabCreateInput, input);
+
         const parametersWithoutEnvAndFocus = {
           workspaceId: Option.getOrNull(parsed.workspaceId),
           cwd: Option.getOrNull(parsed.cwd),
           label: Option.getOrNull(parsed.label),
         };
+
         const parametersWithoutFocus = Option.match(parsed.env, {
           onNone: () => parametersWithoutEnvAndFocus,
           onSome: (env) => ({ ...parametersWithoutEnvAndFocus, env }),
         });
+
         const parameters = Option.match(parsed.focus, {
           onNone: () => parametersWithoutFocus,
           onSome: (focus) => ({ ...parametersWithoutFocus, focus }),
         });
+
         const response = yield* transport.request("tab.create", parameters, options);
+
         return yield* decodeHerdrWire(parseTabCreateResult, response.result, response.requestId);
       }),
     ),
     list: defineHerdrOperation("TabService.list", (input = {}, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("TabService.list", parseTabListInput, input);
+
         const response = yield* transport.request(
           "tab.list",
           { workspaceId: Option.getOrNull(parsed.workspaceId) },
           options,
         );
+
         return yield* decodeHerdrWire(parseTabs, response.result.tabs, response.requestId);
       }),
     ),
     get: defineHerdrOperation("TabService.get", (id, options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("tab.get", { tabId: id }, options);
+
         return yield* decodeHerdrWire(parseTab, response.result.tab, response.requestId);
       }),
     ),
     focus: defineHerdrOperation("TabService.focus", (id, options = {}) =>
       Effect.gen(function* () {
         const response = yield* transport.request("tab.focus", { tabId: id }, options);
+
         return yield* decodeHerdrWire(parseTab, response.result.tab, response.requestId);
       }),
     ),
     rename: defineHerdrOperation("TabService.rename", (id, label, options = {}) =>
       Effect.gen(function* () {
         const parsedLabel = yield* decodeHerdrInput("TabService.rename", parseTabLabel, label);
+
         const response = yield* transport.request(
           "tab.rename",
           { tabId: id, label: parsedLabel },
           options,
         );
+
         return yield* decodeHerdrWire(parseTab, response.result.tab, response.requestId);
       }),
     ),
     move: defineHerdrOperation("TabService.move", (id, input, options = {}) =>
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("TabService.move", parseTabMoveInput, input);
+
         const response = yield* transport.request(
           "tab.move",
           { tabId: id, insertIndex: parsed.insertIndex },
           options,
         );
+
         return yield* decodeHerdrWire(parseTabs, response.result.tabs, response.requestId);
       }),
     ),

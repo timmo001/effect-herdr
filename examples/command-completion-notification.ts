@@ -7,6 +7,7 @@ const buildCompletionMarker = "HERDR_BUILD_FINISHED";
 const commandCompletionNotification = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   const repositoryPath = herdr.ids.absolutePath(process.cwd());
+
   const commandPane = yield* herdr.panes.split(undefined, {
     direction: "down",
     ratio: 0.35,
@@ -18,6 +19,7 @@ const commandCompletionNotification = Effect.gen(function* () {
     commandPane.id,
     `pnpm run build; code=$?; printf '\\n${buildCompletionMarker}:%s\\n' "$code"\n`,
   );
+
   const completed = yield* herdr.panes.waitForOutput(
     commandPane.id,
     {
@@ -30,10 +32,12 @@ const commandCompletionNotification = Effect.gen(function* () {
     },
     { requestTimeout: Duration.minutes(11) },
   );
+
   const matchedLine = Option.getOrElse(
     completed.matchedLine,
     () => `${buildCompletionMarker}:unknown`,
   );
+
   const succeeded = matchedLine.endsWith(":0");
 
   yield* herdr.notifications.show({

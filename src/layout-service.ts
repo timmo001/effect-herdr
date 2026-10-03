@@ -28,8 +28,11 @@ import {
 } from "./herdr-transport.ts";
 
 const parseLayoutApplyInput = Schema.decodeEffect(LayoutApplyInput);
+
 const parseLayoutDescription = Schema.decodeUnknownEffect(LayoutDescription);
+
 const parseLayoutSetSplitRatioInput = Schema.decodeEffect(LayoutSetSplitRatioInput);
+
 const parseLayoutTarget = Schema.decodeEffect(LayoutTarget);
 
 /**
@@ -83,8 +86,10 @@ export const makeLayoutService = Effect.gen(function* () {
           target === undefined
             ? undefined
             : yield* decodeHerdrInput("LayoutService.export", parseLayoutTarget, target);
+
         const parameters = encodeLayoutTarget(parsedTarget);
         const response = yield* transport.request("layout.export", parameters, options);
+
         return yield* decodeHerdrWire(
           parseLayoutDescription,
           response.result.layout,
@@ -96,17 +101,21 @@ export const makeLayoutService = Effect.gen(function* () {
       Effect.gen(function* () {
         const parsed = yield* decodeHerdrInput("LayoutService.apply", parseLayoutApplyInput, input);
         const root = encodeLayoutNode(parsed.root);
+
         const base = {
           workspaceId: Option.getOrNull(parsed.workspaceId),
           tabId: Option.getOrNull(parsed.replaceTabId),
           tabLabel: Option.getOrNull(parsed.tabLabel),
           root,
         };
+
         const parameters = Option.match(parsed.focus, {
           onNone: () => base,
           onSome: (focus) => ({ ...base, focus }),
         });
+
         const response = yield* transport.request("layout.apply", parameters, options);
+
         return yield* decodeHerdrWire(
           parseLayoutDescription,
           response.result.layout,
@@ -126,17 +135,21 @@ export const makeLayoutService = Effect.gen(function* () {
                   parseLayoutTarget,
                   target,
                 );
+
           const parsed = yield* decodeHerdrInput(
             "LayoutService.setSplitRatio",
             parseLayoutSetSplitRatioInput,
             input,
           );
+
           const selected = encodeLayoutTarget(parsedTarget);
+
           const response = yield* transport.request(
             "layout.set_split_ratio",
             { ...selected, path: parsed.path, ratio: parsed.ratio },
             options,
           );
+
           return yield* decodeHerdrWire(
             parseLayoutDescription,
             response.result.layout,
@@ -194,6 +207,7 @@ function encodeLayoutNode(node: LayoutApplyInput["root"]):
       second: encodeLayoutNode(node.second),
     };
   }
+
   const base = {
     type: node.type,
     paneId: Option.getOrNull(node.paneId),
@@ -201,6 +215,7 @@ function encodeLayoutNode(node: LayoutApplyInput["root"]):
     cwd: Option.getOrNull(node.cwd),
     command: Option.getOrNull(node.command),
   };
+
   return Option.match(node.env, {
     onNone: () => base,
     onSome: (env) => ({ ...base, env }),

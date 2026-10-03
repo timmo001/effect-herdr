@@ -244,9 +244,11 @@ function makeHerdrSdkLayer(configLayer: Layer.Layer<HerdrConfig, HerdrConfigurat
   const sharedDependencies = herdrTransportLayerWithoutDependencies.pipe(
     Layer.provideMerge(configLayer),
   );
+
   const configuredNamespaces = herdrNamespaceServicesLayerWithoutDependencies.pipe(
     Layer.provideMerge(sharedDependencies),
   );
+
   return herdrSdkLayerWithoutDependencies.pipe(Layer.provide(configuredNamespaces));
 }
 

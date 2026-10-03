@@ -15,6 +15,7 @@ const blockedAgentRescue = Effect.gen(function* () {
       body: `Checked ${agents.length} detected agents`,
       sound: "done",
     });
+
     return;
   }
 
@@ -28,10 +29,12 @@ const blockedAgentRescue = Effect.gen(function* () {
     ],
   });
   yield* herdr.agents.focus({ paneId: blockedAgent.paneId });
+
   const recentOutput = yield* herdr.agents.read(
     { paneId: blockedAgent.paneId },
     { source: "recent_unwrapped", lines: 40, stripAnsi: true },
   );
+
   const agentLabel = Option.getOrElse(blockedAgent.displayAgent, () =>
     Option.getOrElse(blockedAgent.agent, () => "Agent"),
   );

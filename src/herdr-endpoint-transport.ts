@@ -55,7 +55,9 @@ const EndpointWelcome = Schema.Struct({
     Schema.Struct({ code: Schema.String, message: Schema.String }),
   ),
 });
+
 const parseWelcome = Schema.decodeEffect(Schema.fromJsonString(EndpointWelcome));
+
 const parseEndpointErrorBody = Schema.decodeUnknownEffect(
   Schema.Struct({ code: Schema.String, message: Schema.String }),
 );
@@ -71,14 +73,17 @@ export interface EndpointConnectionSettings {
   /** Hard bound on one binary frame and one reassembled response. */
   readonly maximumBytes: number;
 }
+
 /** Request errors preserve server rejection separately from connection failure. @category errors @since 0.9.0 */
 export type EndpointRequestError =
   HerdrEndpointFailure | HerdrEndpointUnsupportedMethod | HerdrServerError | HerdrUnsupportedResult;
+
 /** Connection-local request methods; socket subscriptions and SSH agent leases use their own transport. @category models @since 0.9.0 */
 export type EndpointRequestMethod = Exclude<
   WireMethod,
   "events.subscribe" | "server.ssh_agent.register"
 >;
+
 /** Internal protocol connection; only ClientShellService exposes domain operations. @category services @since 0.9.0 */
 export interface EndpointWireConnection {
   /** Negotiated endpoint version and advertised capability names. */
@@ -119,15 +124,18 @@ function connectEndpointSocket(path: string): Effect.Effect<Socket, HerdrEndpoin
   return Effect.callback((resume) => {
     const socket = createConnection(resolveHerdrSocketEndpoint(path));
     let connected = false;
+
     const onError = () => {
       if (!connected) resume(Effect.fail(new HerdrEndpointTransportError("connect")));
     };
+
     socket.on("error", onError);
     socket.once("close", () => socket.off("error", onError));
     socket.once("connect", () => {
       connected = true;
       resume(Effect.succeed(socket));
     });
+
     return Effect.sync(() => {
       if (!connected) socket.destroy();
     });
@@ -152,6 +160,7 @@ export const acquireEndpointConnection = (
           connection.destroy();
         }),
     );
+
     const stopped = yield* Deferred.make<never, HerdrEndpointFailure>();
     const welcomeReady = yield* Deferred.make<typeof EndpointWelcome.Type, HerdrEndpointFailure>();
     const pending = new Map<string, PendingEndpointRequest>();
@@ -160,13 +169,17 @@ export const acquireEndpointConnection = (
     let closed = false;
     let bootId: string | undefined;
     let welcomed = false;
+
     let handler:
       ((message: EndpointServerMessage) => Effect.Effect<void, HerdrEndpointFailure>) | undefined;
+
     const earlyMessages: EndpointServerMessage[] = [];
     let earlyBytes = 0;
+
     const ensureOpen = Effect.suspend(() =>
       closed ? Effect.fail(new HerdrEndpointClosed()) : Effect.void,
     );
+
     const fail = (error: HerdrEndpointFailure) =>
       Effect.gen(function* () {
         if (closed) return;
@@ -174,17 +187,20 @@ export const acquireEndpointConnection = (
         socket.destroy();
         yield* Deferred.fail(stopped, error);
         yield* Deferred.fail(welcomeReady, error);
+
         for (const entry of pending.values()) yield* Deferred.fail(entry.result, error);
         pending.clear();
         earlyMessages.length = 0;
         earlyBytes = 0;
       });
+
     yield* Effect.addFinalizer(() => fail(new HerdrEndpointClosed()));
 
     const write = (encode: () => Uint8Array) =>
       writeLock.withPermit(
         Effect.gen(function* () {
           yield* ensureOpen;
+
           const bytes = yield* Effect.try({
             try: encode,
             catch: (error) =>
@@ -192,6 +208,7 @@ export const acquireEndpointConnection = (
                 ? error
                 : new HerdrEndpointInvalidMessage("framing"),
           });
+
           if (bytes.length > settings.maximumBytes + 4)
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("oversized_frame"));
           yield* Effect.callback<void, HerdrEndpointTransportError>((resume) => {
@@ -225,13 +242,17 @@ export const acquireEndpointConnection = (
         if (!welcomed) {
           if (message.kind !== "control" || message.name !== "endpoint.welcome.v1")
             return yield* Effect.fail(new HerdrEndpointNegotiationError("welcome"));
+
           const welcome = yield* parseWelcome(message.data).pipe(
             Effect.mapError(() => new HerdrEndpointNegotiationError("welcome")),
           );
+
           if (Option.isSome(welcome.error))
             return yield* Effect.fail(new HerdrEndpointNegotiationError("rejected"));
+
           if (welcome.generation !== 1)
             return yield* Effect.fail(new HerdrEndpointNegotiationError("generation"));
+
           if (
             welcome.snapshot_codec !== "shell.snapshot.v1" ||
             welcome.surface_codec !== "shell.surface.v1" ||
@@ -239,6 +260,7 @@ export const acquireEndpointConnection = (
             welcome.blob_codec !== "shell.blob.v1"
           )
             return yield* Effect.fail(new HerdrEndpointNegotiationError("codec"));
+
           if (
             !welcome.capabilities.includes("surface_interest") ||
             !welcome.capabilities.includes("health_check")
@@ -246,18 +268,24 @@ export const acquireEndpointConnection = (
             return yield* Effect.fail(new HerdrEndpointNegotiationError("capability"));
           welcomed = true;
           yield* Deferred.succeed(welcomeReady, welcome);
+
           return;
         }
+
         if (message.kind === "shutdown") return yield* Effect.fail(new HerdrEndpointClosed());
+
         if (message.kind === "response") {
           const entry = pending.get(message.requestId);
+
           if (entry === undefined || message.bootId !== bootId)
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("correlation"));
           entry.byteLength += message.data.length;
+
           const bufferedBytes = [...pending.values()].reduce(
             (total, request) => total + request.byteLength,
             0,
           );
+
           if (
             bufferedBytes > settings.maximumBytes ||
             entry.chunks.length >= 4096 ||
@@ -265,7 +293,9 @@ export const acquireEndpointConnection = (
           )
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("resource_limit"));
           entry.chunks.push(message.data);
+
           if (!message.finalChunk) return;
+
           const response = yield* Effect.try({
             try: () =>
               parseHerdrWireResponse(
@@ -276,16 +306,20 @@ export const acquireEndpointConnection = (
               ),
             catch: () => new HerdrEndpointInvalidMessage("schema"),
           });
+
           if (response.id !== message.requestId)
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("correlation"));
           pending.delete(message.requestId);
           yield* Deferred.succeed(entry.result, response);
+
           return;
         }
+
         yield* routeLock.withPermit(
           Effect.gen(function* () {
             if (handler !== undefined) return yield* handler(message);
             earlyBytes += byteLength;
+
             if (earlyMessages.length >= 64 || earlyBytes > settings.maximumBytes)
               return yield* Effect.fail(new HerdrEndpointInvalidMessage("resource_limit"));
             earlyMessages.push(message);
@@ -297,6 +331,7 @@ export const acquireEndpointConnection = (
     const header = Buffer.alloc(4);
     let payload: Buffer | undefined;
     let payloadOffset = 0;
+
     const reader = NodeStream.fromReadable<Uint8Array, HerdrEndpointTransportError>({
       evaluate: () => socket,
       onError: () => new HerdrEndpointTransportError("read"),
@@ -304,29 +339,35 @@ export const acquireEndpointConnection = (
       Stream.runForEach((chunk) =>
         Effect.gen(function* () {
           let offset = 0;
+
           while (offset < chunk.length) {
             if (payload === undefined) {
               const count = Math.min(4 - headerOffset, chunk.length - offset);
               header.set(chunk.subarray(offset, offset + count), headerOffset);
               headerOffset += count;
               offset += count;
+
               if (headerOffset < 4) continue;
               const length = header.readUInt32LE();
+
               if (length === 0 || length > settings.maximumBytes)
                 return yield* Effect.fail(new HerdrEndpointInvalidMessage("oversized_frame"));
               payload = Buffer.alloc(length);
               payloadOffset = 0;
               headerOffset = 0;
             }
+
             const count = Math.min(payload.length - payloadOffset, chunk.length - offset);
             payload.set(chunk.subarray(offset, offset + count), payloadOffset);
             payloadOffset += count;
             offset += count;
+
             if (payloadOffset === payload.length) {
               const message = yield* Result.match(decodeEndpointMessage(payload), {
                 onFailure: Effect.fail,
                 onSuccess: Effect.succeed,
               });
+
               const length = payload.length;
               payload = undefined;
               payloadOffset = 0;
@@ -338,8 +379,10 @@ export const acquireEndpointConnection = (
       Effect.andThen(Effect.fail(new HerdrEndpointTransportError("premature_close"))),
       Effect.catch(fail),
     );
+
     yield* reader.pipe(Effect.forkScoped);
     yield* write(() => encodeEndpointControl("endpoint.hello.v1", settings.hello));
+
     const welcome = yield* Deferred.await(welcomeReady).pipe(
       Effect.timeoutOrElse({
         duration: settings.timeoutMs,
@@ -357,19 +400,25 @@ export const acquireEndpointConnection = (
     > =>
       Effect.gen(function* () {
         yield* ensureOpen;
+
         if (!welcome.methods.includes(method))
           return yield* Effect.fail(new HerdrEndpointUnsupportedMethod(method));
+
         if (bootId === undefined)
           return yield* Effect.fail(new HerdrEndpointInvalidMessage("revision"));
+
         if (pending.size >= 32)
           return yield* Effect.fail(new HerdrEndpointInvalidMessage("resource_limit"));
         const requestBootId = bootId;
         const requestId = randomUUID();
+
         const result = yield* Deferred.make<
           SuccessResponse | ErrorResponse,
           HerdrEndpointFailure
         >();
+
         pending.set(requestId, { result, chunks: [], byteLength: 0 });
+
         const response = yield* Effect.gen(function* () {
           yield* write(() =>
             encodeEndpointRequest(
@@ -377,6 +426,7 @@ export const acquireEndpointConnection = (
               encodeWireRequest(requestId, method, params).trimEnd(),
             ),
           );
+
           return yield* Deferred.await(result);
         }).pipe(
           Effect.timeoutOrElse({
@@ -386,6 +436,7 @@ export const acquireEndpointConnection = (
           Effect.onExit((exit) =>
             Effect.gen(function* () {
               pending.delete(requestId);
+
               if (Exit.isFailure(exit))
                 yield* fail(
                   Option.getOrElse(
@@ -396,16 +447,20 @@ export const acquireEndpointConnection = (
             }),
           ),
         );
+
         if ("error" in response) {
           const error = yield* parseEndpointErrorBody(response.error).pipe(
             Effect.mapError(() => new HerdrEndpointInvalidMessage("schema")),
           );
+
           return yield* Effect.fail(new HerdrServerError(error.code, error.message, requestId));
         }
+
         if (!isExpectedWireResult(method, response.result))
           return yield* Effect.fail(
             new HerdrUnsupportedResult(method, response.result.type, method, requestId),
           );
+
         return { requestId, result: response.result };
       });
 
@@ -420,6 +475,7 @@ export const acquireEndpointConnection = (
       bindBoot: (id) =>
         Effect.gen(function* () {
           yield* ensureOpen;
+
           if (bootId !== undefined && bootId !== id)
             return yield* Effect.fail(new HerdrEndpointInvalidMessage("revision"));
           bootId = id;
@@ -428,9 +484,11 @@ export const acquireEndpointConnection = (
         routeLock.withPermit(
           Effect.gen(function* () {
             yield* ensureOpen;
+
             if (handler !== undefined)
               return yield* Effect.fail(new HerdrEndpointInvalidMessage("resource_limit"));
             handler = next;
+
             for (const message of earlyMessages) yield* next(message);
             earlyMessages.length = 0;
             earlyBytes = 0;

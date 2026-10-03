@@ -19,6 +19,7 @@ test("every protocol-22 API-socket addition dispatches and decodes a successful 
         const server = yield* startHerdrTestServer((request) =>
           Effect.succeed(makeHerdrSuccessResponse(request)),
         );
+
         yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
           const pane = sdk.ids.pane("pane");
@@ -95,6 +96,7 @@ test("protocol 22 workspace intents and command targets encode only their select
         const server = yield* startHerdrTestServer((request) =>
           Effect.succeed(makeHerdrSuccessResponse(request)),
         );
+
         yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
           const workspace = sdk.ids.workspace("workspace-source");
@@ -122,10 +124,12 @@ test("protocol 22 workspace intents and command targets encode only their select
           expect(
             yield* sdk.workspaces.createInDirectory("relative").pipe(Effect.flip),
           ).toBeInstanceOf(HerdrInvalidInput);
+
           const foreignSelection = {
             expectedTabId: "tab",
             selection: { paneId: "other", anchor: { row: 0, col: 0 }, cursor: { row: 0, col: 0 } },
           };
+
           expect(
             yield* sdk.commands.invokeInPane(command, pane, foreignSelection).pipe(Effect.flip),
           ).toBeInstanceOf(HerdrInvalidInput);
@@ -134,9 +138,11 @@ test("protocol 22 workspace intents and command targets encode only their select
             herdrSdkLayerFromOptions({ socketPath: HerdrAbsolutePath.make(server.socketPath) }),
           ),
         );
+
         const creations = server.requests.filter(
           (request) => request.method === "workspace.create",
         );
+
         expect(creations.map((request) => request.params)).toEqual([
           { label: "default" },
           { cwd: "/fixture/repository", label: "explicit" },
@@ -223,6 +229,7 @@ test("new capabilities, integration states, bounded matches, and optional link r
                     : makeHerdrSuccessResponse(request),
           ),
         );
+
         yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
           const pong = yield* sdk.server.ping();
@@ -240,19 +247,23 @@ test("new capabilities, integration states, bounded matches, and optional link r
             "outdated",
           ]);
           const pane = sdk.ids.pane("pane");
+
           const searchInput = {
             query: "é".repeat(2048),
             direction: "forward" as const,
             cursor: { row: 0, col: 0 },
             contentRevision: 6,
           };
+
           const search = yield* sdk.panes.copySearch(pane, searchInput);
           expect(search.matches.length).toBe(1);
           expect(search.total).toBe(2000);
           expect(Option.getOrThrow(search.currentGlobal)).toBe(100);
+
           const oversized = yield* sdk.panes
             .copySearch(pane, { ...searchInput, query: searchInput.query + "é" })
             .pipe(Effect.flip);
+
           expect(oversized).toBeInstanceOf(HerdrInvalidInput);
           expect(
             yield* sdk.panes.scroll(pane, { offsetFromBottom: -1 }).pipe(Effect.flip),
@@ -293,9 +304,11 @@ test.for([
               : { id: request.id, error: { code, message: "fixture rejection" } },
           ),
         );
+
         yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
           const pane = sdk.ids.pane("pane");
+
           const operation =
             code === "stale_content"
               ? sdk.panes.selection.read(pane, {
@@ -311,6 +324,7 @@ test.for([
                       { paneId: pane },
                       { text: "fixture", wait: { until: ["idle"] } },
                     );
+
           const error = yield* operation.pipe(Effect.flip);
           expect(error).toBeInstanceOf(HerdrServerError);
           expect(error).toMatchObject({ serverCode: code });
@@ -343,6 +357,7 @@ test("Herdr 0.9.2 pane additions encode their wire fields and decode link region
               : makeHerdrSuccessResponse(request),
           ),
         );
+
         yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
           const pane = sdk.ids.pane("pane");

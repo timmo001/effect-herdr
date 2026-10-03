@@ -27,6 +27,7 @@ const dictionaryKeys = [
   "paneId",
   "stateLabels",
 ];
+
 const fixtureDictionary = Object.fromEntries(dictionaryKeys.map((key) => [key, "fixture"]));
 
 test("SDK preserves environment and metadata dictionary keys on the socket", (context) =>
@@ -37,6 +38,7 @@ test("SDK preserves environment and metadata dictionary keys on the socket", (co
         const server = yield* startHerdrTestServer((request) =>
           Effect.succeed(makeHerdrSuccessResponse(request)),
         );
+
         // Metadata names are protocol-restricted; environment names have no such restriction.
         const tokens = {
           ...Object.fromEntries(
@@ -46,6 +48,7 @@ test("SDK preserves environment and metadata dictionary keys on the socket", (co
           ),
           deletedToken: null,
         };
+
         // The public schema restricts state labels to the five known agent statuses.
         const stateLabels = {
           idle: "Idle",
@@ -54,6 +57,7 @@ test("SDK preserves environment and metadata dictionary keys on the socket", (co
           done: "Done",
           unknown: "Unknown",
         };
+
         yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
           yield* sdk.workspaces.create({ env: fixtureDictionary });
@@ -82,17 +86,23 @@ test("SDK preserves environment and metadata dictionary keys on the socket", (co
             herdrSdkLayerFromOptions({ socketPath: HerdrAbsolutePath.make(server.socketPath) }),
           ),
         );
+
         const workspaceCreate = server.requests.find(
           (request) => request.method === "workspace.create",
         );
+
         expect(workspaceCreate?.params.env).toStrictEqual(fixtureDictionary);
+
         const workspaceMetadata = server.requests.find(
           (request) => request.method === "workspace.report_metadata",
         );
+
         expect(workspaceMetadata?.params.tokens).toStrictEqual(tokens);
+
         const paneMetadata = server.requests.find(
           (request) => request.method === "pane.report_metadata",
         );
+
         expect(paneMetadata?.params.tokens).toStrictEqual(tokens);
         expect(paneMetadata?.params.state_labels).toStrictEqual(stateLabels);
         expect(paneMetadata?.params.pane_id).toBe("pane-1");
@@ -106,6 +116,7 @@ test("SDK preserves environment and metadata dictionary keys on the socket", (co
             second: { type: "pane", env: fixtureDictionary },
           },
         });
+
         if (layout?.params.root.type !== "split")
           throw new Error("Wire encoder test expected a split layout");
         expect(layout.params.root.first).toHaveProperty("env", fixtureDictionary);
@@ -123,6 +134,7 @@ test("pane and agent request codecs preserve null, omitted fields, false and nes
         const server = yield* startHerdrTestServer((request) =>
           Effect.succeed(makeHerdrSuccessResponse(request)),
         );
+
         yield* Effect.gen(function* () {
           const sdk = yield* HerdrSdk;
           const paneId = sdk.ids.pane("pane-1");
@@ -196,6 +208,7 @@ test("arbitrary dictionary keys round-trip without prototype mutation or protoco
         Effect.sync(() => {
           const dictionary = { ...fixtureDictionary, ...Object.fromEntries(entries) };
           const tokens = { ...dictionary, deletedToken: null };
+
           const wire: unknown = JSON.parse(
             encodeWireRequest("request-1", "pane.report_metadata", {
               paneId: "pane-1",
@@ -205,6 +218,7 @@ test("arbitrary dictionary keys round-trip without prototype mutation or protoco
               ttlMs: 1000,
             }),
           );
+
           expect(wire).toStrictEqual({
             id: "request-1",
             method: "pane.report_metadata",
@@ -216,9 +230,11 @@ test("arbitrary dictionary keys round-trip without prototype mutation or protoco
               ttl_ms: 1000,
             },
           });
+
           const envWire: unknown = JSON.parse(
             encodeWireRequest("request-2", "workspace.create", { env: dictionary }),
           );
+
           expect(envWire).toStrictEqual({
             id: "request-2",
             method: "workspace.create",
@@ -278,6 +294,7 @@ test("nested structured parameters encode protocol names while string values rem
       },
     }),
   );
+
   expect(wire).toStrictEqual({
     id: 'quoted"id\n',
     method: "plugin.action.invoke",

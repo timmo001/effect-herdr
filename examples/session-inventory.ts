@@ -5,8 +5,10 @@ import { runHerdrExample } from "./example-runtime.ts";
 const sessionInventory = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   const snapshot = yield* herdr.session.snapshot();
+
   const agentStatusCounts = snapshot.agents.reduce((counts, agent) => {
     counts.set(agent.status, (counts.get(agent.status) ?? 0) + 1);
+
     return counts;
   }, new Map<string, number>());
 

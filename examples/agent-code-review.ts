@@ -5,12 +5,14 @@ import { runHerdrExample } from "./example-runtime.ts";
 const agentCodeReview = Effect.gen(function* () {
   const herdr = yield* HerdrSdk;
   const repositoryPath = herdr.ids.absolutePath(process.cwd());
+
   const reviewerPane = yield* herdr.panes.split(undefined, {
     direction: "right",
     ratio: 0.5,
     cwd: repositoryPath,
     focus: false,
   });
+
   const reviewerName = herdr.ids.agentName("sdk-reviewer");
 
   yield* herdr.agents.start({
@@ -19,6 +21,7 @@ const agentCodeReview = Effect.gen(function* () {
     paneId: reviewerPane.id,
     timeoutMs: Duration.toMillis(Duration.minutes(2)),
   });
+
   const reviewer = yield* herdr.agents.prompt(
     { name: reviewerName },
     {

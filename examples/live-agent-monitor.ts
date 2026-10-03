@@ -17,6 +17,7 @@ const liveAgentMonitor = Effect.gen(function* () {
           yield* Effect.logInfo(
             `Agent ${event.agentStatus} in pane ${event.paneId}: ${Option.getOrElse(event.displayAgent, () => "unnamed")}`,
           );
+
           if (event.agentStatus === "blocked" || event.agentStatus === "done") {
             yield* herdr.notifications.show({
               title: event.agentStatus === "blocked" ? "Agent needs input" : "Agent finished",

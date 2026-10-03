@@ -23,21 +23,28 @@ export function isExpectedWireResult<Method extends WireMethod>(
   result: ResponseResult,
 ): result is WireMethodMap[Method]["result"] {
   const acceptedTypes: readonly string[] = wireResultTypesByMethod[method];
+
   return acceptedTypes.includes(result.type);
 }
 
 const SCHEMA_ID = "https://herdr.dev/herdr-api.schema.json";
+
 const ajv = new Ajv2020({ allErrors: true, strict: false, validateFormats: false });
+
 ajv.addSchema({ ...herdrApiSchema, $id: SCHEMA_ID });
+
 const parseSuccessResponse = ajv.compile<SuccessResponse>({
   $ref: `${SCHEMA_ID}#/schemas/success_response`,
 });
+
 const parseErrorResponse = ajv.compile<ErrorResponse>({
   $ref: `${SCHEMA_ID}#/schemas/error_response`,
 });
+
 const parseLifecycleEvent = ajv.compile<EventEnvelope>({
   $ref: `${SCHEMA_ID}#/schemas/event`,
 });
+
 const parseSubscriptionEvent = ajv.compile<SubscriptionEventEnvelope>({
   $ref: `${SCHEMA_ID}#/schemas/subscription_event`,
 });
@@ -87,5 +94,6 @@ function invalidWireValue(
   errors: readonly ErrorObject[],
 ): Error {
   const detail = ajv.errorsText(errors.slice(0, 5), { separator: "; " });
+
   return new Error(`Herdr wire ${kind} failed schema parsing for request ${requestId}: ${detail}`);
 }

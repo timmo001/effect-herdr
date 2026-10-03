@@ -9,6 +9,7 @@ import { HerdrEndpointInvalidMessage } from "./herdr-endpoint-errors.ts";
 import type { ClientShellKeyInput, ClientShellMouseInput } from "./herdr-client-shell-input.ts";
 
 const utf8 = new TextDecoder("utf-8", { fatal: true });
+
 const MAX_FRAME_BYTES = 32 * 1024 * 1024;
 
 class EndpointReader {
@@ -19,6 +20,7 @@ class EndpointReader {
       throw new HerdrEndpointInvalidMessage("framing");
     const result = this.bytes.subarray(this.offset, this.offset + length);
     this.offset += length;
+
     return result;
   }
   byte(): number {
@@ -26,35 +28,49 @@ class EndpointReader {
   }
   bool(): boolean {
     const value = this.byte();
+
     if (value > 1) throw new HerdrEndpointInvalidMessage("framing");
+
     return value === 1;
   }
   uint64(maximumTag = 253): bigint {
     const tag = this.byte();
+
     if (tag > maximumTag) throw new HerdrEndpointInvalidMessage("framing");
+
     if (tag <= 250) return BigInt(tag);
+
     if (tag === 251) return BigInt(this.take(2).readUInt16LE());
+
     if (tag === 252) return BigInt(this.take(4).readUInt32LE());
+
     if (tag === 253) return this.take(8).readBigUInt64LE();
     throw new HerdrEndpointInvalidMessage("framing");
   }
   uint(maximum = Number.MAX_SAFE_INTEGER): number {
     const value = this.uint64();
+
     if (value > BigInt(maximum)) throw new HerdrEndpointInvalidMessage("framing");
+
     return Number(value);
   }
   u16(): number {
     const value = this.uint64(251);
+
     if (value > 65535n) throw new HerdrEndpointInvalidMessage("framing");
+
     return Number(value);
   }
   u32(): number {
     const value = this.uint64(252);
+
     if (value > 0xffff_ffffn) throw new HerdrEndpointInvalidMessage("framing");
+
     return Number(value);
   }
   i32(): number {
     const value = this.u32();
+
     return value % 2 === 0 ? value / 2 : -(value + 1) / 2;
   }
   data(): Uint8Array {
@@ -69,12 +85,16 @@ class EndpointReader {
   array<A>(read: () => A): A[] {
     const count = this.uint(Math.min(1_000_000, this.bytes.length - this.offset));
     const values: A[] = [];
+
     for (let index = 0; index < count; index++) values.push(read());
+
     return values;
   }
   choice<const A extends readonly string[]>(values: A): A[number] {
     const value = values[this.u32()];
+
     if (value === undefined) throw new HerdrEndpointInvalidMessage("framing");
+
     return value;
   }
   finish(): void {
@@ -85,9 +105,11 @@ class EndpointReader {
 function readRect(reader: EndpointReader) {
   return { x: reader.u16(), y: reader.u16(), width: reader.u16(), height: reader.u16() };
 }
+
 function readCursor(reader: EndpointReader) {
   return { x: reader.u16(), y: reader.u16(), visible: reader.bool(), shape: reader.byte() };
 }
+
 function readCell(reader: EndpointReader) {
   return {
     symbol: reader.text(),
@@ -98,6 +120,7 @@ function readCell(reader: EndpointReader) {
     hyperlink: reader.optional(() => reader.u32()),
   };
 }
+
 function readFrame(reader: EndpointReader) {
   return {
     cells: reader.array(() => readCell(reader)),
@@ -108,6 +131,7 @@ function readFrame(reader: EndpointReader) {
     graphics: reader.data(),
   };
 }
+
 function readSurfacePane(reader: EndpointReader) {
   return {
     paneId: reader.text(),
@@ -128,16 +152,21 @@ function readSurfacePane(reader: EndpointReader) {
     pixelHeight: reader.u32(),
   };
 }
+
 function readGraphicsTarget(reader: EndpointReader) {
   const kind = reader.choice(["pane", "popup"]);
+
   return kind === "pane" ? { kind, paneId: reader.text() } : { kind, terminalId: reader.text() };
 }
+
 function readGraphicsSource(reader: EndpointReader) {
   const kind = reader.choice(["terminal", "paneLayer"]);
+
   return kind === "terminal"
     ? { kind, target: readGraphicsTarget(reader), imageId: reader.u32() }
     : { kind, paneId: reader.text(), layerId: reader.text() };
 }
+
 function readGraphicsKey(reader: EndpointReader) {
   return {
     source: readGraphicsSource(reader),
@@ -148,6 +177,7 @@ function readGraphicsKey(reader: EndpointReader) {
     dataFingerprint: reader.uint64(),
   };
 }
+
 function readGraphicsScene(reader: EndpointReader) {
   return {
     assets: reader.array(() => ({ key: readGraphicsKey(reader), data: reader.data() })),
@@ -170,10 +200,13 @@ function readGraphicsScene(reader: EndpointReader) {
     retainedAssets: reader.array(() => readGraphicsKey(reader)),
   };
 }
+
 function readPopupSize(reader: EndpointReader) {
   const kind = reader.choice(["cells", "percent"]);
+
   return { kind, value: kind === "cells" ? reader.u16() : reader.byte() };
 }
+
 function readPopup(reader: EndpointReader) {
   return {
     terminalId: reader.text(),
@@ -187,6 +220,7 @@ function readPopup(reader: EndpointReader) {
     pixelHeight: reader.u32(),
   };
 }
+
 function readSurface(reader: EndpointReader) {
   return {
     bootId: reader.text(),
@@ -205,6 +239,7 @@ function readSurface(reader: EndpointReader) {
     graphics: readGraphicsScene(reader),
   };
 }
+
 function readPatch(reader: EndpointReader) {
   return {
     bootId: reader.text(),
@@ -220,8 +255,10 @@ function readPatch(reader: EndpointReader) {
     cursor: reader.optional(() => readCursor(reader)),
   };
 }
+
 function readServerMessage(reader: EndpointReader) {
   const tag = reader.u32();
+
   switch (tag) {
     case 2:
       return { kind: "graphics" as const, bytes: reader.data() };
@@ -305,6 +342,7 @@ function readServerMessage(reader: EndpointReader) {
 
 /** Validated bincode envelope; domain schemas validate its nested presentation data next. @category models @since 0.9.0 */
 export type EndpointServerMessage = ReturnType<typeof readServerMessage>;
+
 /** Decodes one complete bincode payload, rejecting trailing bytes and unsafe integer conversions. @category decoding @since 0.9.0 */
 export function decodeEndpointMessage(
   payload: Uint8Array,
@@ -314,6 +352,7 @@ export function decodeEndpointMessage(
       const reader = new EndpointReader(Buffer.from(payload));
       const message = readServerMessage(reader);
       reader.finish();
+
       return message;
     },
     catch: (cause) =>
@@ -325,43 +364,58 @@ export function decodeEndpointMessage(
 
 function encodeUnsigned(value: number): Buffer {
   if (!Number.isSafeInteger(value) || value < 0) throw new HerdrEndpointInvalidMessage("framing");
+
   if (value <= 250) return Buffer.from([value]);
+
   if (value <= 65535) {
     const bytes = Buffer.alloc(3);
     bytes[0] = 251;
     bytes.writeUInt16LE(value, 1);
+
     return bytes;
   }
+
   if (value <= 0xffff_ffff) {
     const bytes = Buffer.alloc(5);
     bytes[0] = 252;
     bytes.writeUInt32LE(value, 1);
+
     return bytes;
   }
+
   const bytes = Buffer.alloc(9);
   bytes[0] = 253;
   bytes.writeBigUInt64LE(BigInt(value), 1);
+
   return bytes;
 }
+
 function encodeText(text: string): Buffer {
   const bytes = Buffer.from(text, "utf8");
+
   return Buffer.concat([encodeUnsigned(bytes.length), bytes]);
 }
+
 function frameEndpointPayload(parts: readonly Uint8Array[]): Uint8Array {
   const payload = Buffer.concat(parts);
+
   if (payload.length > MAX_FRAME_BYTES) throw new HerdrEndpointInvalidMessage("oversized_frame");
   const header = Buffer.alloc(4);
   header.writeUInt32LE(payload.length);
+
   return Buffer.concat([header, payload]);
 }
+
 /** Encodes a named generation-1 client control as a complete framed message. @category encoding @since 0.9.0 */
 export function encodeEndpointControl(kind: string, data: string): Uint8Array {
   return frameEndpointPayload([encodeUnsigned(20), encodeText(kind), encodeText(data)]);
 }
+
 /** Encodes one request bound to the endpoint process that issued its projection. @category encoding @since 0.9.0 */
 export function encodeEndpointRequest(bootId: string, request: string): Uint8Array {
   return frameEndpointPayload([encodeUnsigned(15), encodeText(bootId), encodeText(request)]);
 }
+
 /** Encodes one semantic paste/text commit for a stable pane or popup target. @category encoding @since 0.9.0 */
 export function encodeEndpointText(
   target: "pane" | "popup",
@@ -377,6 +431,7 @@ export function encodeEndpointText(
     encodeText(text),
   ]);
 }
+
 const endpointNamedKeys = {
   backspace: 0,
   enter: 1,
@@ -395,9 +450,11 @@ const endpointNamedKeys = {
   escape: 14,
   null: 17,
 } as const;
+
 function encodeOptional<A>(value: A | undefined, encode: (value: A) => Uint8Array): Uint8Array {
   return value === undefined ? Buffer.from([0]) : Buffer.concat([Buffer.from([1]), encode(value)]);
 }
+
 /** Encodes a parsed semantic key lifecycle event, including optional Windows identity. @category encoding @since 0.9.0 */
 export function encodeEndpointKey(
   target: "pane" | "popup",
@@ -410,6 +467,7 @@ export function encodeEndpointKey(
       : input.code.kind === "function"
         ? Buffer.from([16, input.code.number])
         : Buffer.concat([Buffer.from([15]), Buffer.from(input.code.character, "utf8")]);
+
   return frameEndpointPayload([
     encodeUnsigned(target === "pane" ? 13 : 14),
     encodeText(id),
@@ -435,6 +493,7 @@ export function encodeEndpointKey(
     ),
   ]);
 }
+
 /** Encodes a parsed cell/pixel mouse event for an explicit pane or popup target. @category encoding @since 0.9.0 */
 export function encodeEndpointMouse(
   target: "pane" | "popup",
@@ -451,8 +510,10 @@ export function encodeEndpointMouse(
     scrollLeft: 6,
     scrollRight: 7,
   } as const;
+
   const buttons = { left: 0, right: 1, middle: 2 } as const;
   const position = input.position;
+
   return frameEndpointPayload([
     encodeUnsigned(target === "pane" ? 13 : 14),
     encodeText(id),
@@ -478,6 +539,7 @@ export function encodeEndpointMouse(
     encodeUnsigned(input.lines ?? 1),
   ]);
 }
+
 /** Encodes the surface dimensions used by the client shell, not the entire host terminal. @category encoding @since 0.9.0 */
 export function encodeEndpointResize(
   columns: number,
@@ -495,6 +557,7 @@ export function encodeEndpointResize(
     Buffer.from([pixelMouse ? 1 : 0]),
   ]);
 }
+
 /** Encodes client-local focus or mouse-capture preference, never a global focus command. @category encoding @since 0.9.0 */
 export function encodeEndpointPreference(
   preference: "focus" | "mouseCapture",

@@ -45,6 +45,7 @@ export class PopupService extends Context.Service<PopupService, IPopupService>()
  */
 export const makePopupService = Effect.gen(function* () {
   const transport = yield* HerdrTransport;
+
   return PopupService.of({
     close: defineHerdrOperation("PopupService.close", (options = {}) =>
       transport.request("popup.close", {}, options).pipe(Effect.asVoid),

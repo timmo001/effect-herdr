@@ -19,8 +19,11 @@ type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
     ? true
     : false;
+
 type Assert<Value extends true> = Value;
+
 type Success<Value> = Value extends Effect.Effect<infer A, infer _E, infer _R> ? A : never;
+
 type Emitted<Value> = Value extends Stream.Stream<infer A, infer _E, infer _R> ? A : never;
 
 type WorktreeSelectionFixture = {
@@ -32,6 +35,7 @@ type WorktreeSelectionFixture = {
   label: Option.None<string>;
   focus: Option.None<boolean>;
 };
+
 type AgentSessionFixture = {
   source: string;
   agent: string;
@@ -43,28 +47,42 @@ type AgentSessionFixture = {
 };
 
 declare const sdk: IHerdrSdk;
+
 const wait = sdk.events.wait({ type: "workspace.created" });
+
 const subscription = sdk.events.subscribe([
   { type: "workspace.created" },
   { type: "pane.closed", paneId: "pane-1" },
 ]);
+
 sdk.agents.get({ kind: "pane", paneId: "pane-1" });
+
 sdk.agents.get({ kind: "agent", name: "worker" });
+
 sdk.agents.get({ paneId: "pane-1" });
+
 sdk.agents.get({ name: "worker" });
+
 sdk.layouts.export({ tabId: "tab-1" });
+
 sdk.layouts.export({ paneId: "pane-1" });
+
 sdk.panes.swap({ direction: "right" });
+
 sdk.panes.swap({ sourcePaneId: "pane-1", targetPaneId: "pane-2" });
 
 // @ts-expect-error Agent targets cannot select both pane and name.
 sdk.agents.get({ paneId: "pane-1", name: "worker" });
+
 // @ts-expect-error The discriminator must agree with the selector.
 sdk.agents.get({ kind: "agent", paneId: "pane-1" });
+
 // @ts-expect-error Explicit undefined does not erase a competing selector.
 sdk.agents.get({ paneId: "pane-1", name: undefined });
+
 // @ts-expect-error Layout targets cannot select both tab and pane.
 sdk.layouts.export({ tabId: "tab-1", paneId: "pane-1" });
+
 // @ts-expect-error Pane swaps cannot select both directional and explicit-ID modes.
 sdk.panes.swap({ direction: "right", sourcePaneId: "pane-1", targetPaneId: "pane-2" });
 

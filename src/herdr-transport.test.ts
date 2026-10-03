@@ -38,33 +38,41 @@ test("transport classifies malformed, oversized, server, and timeout failures", 
       const malformedServer = yield* startHerdrTestServer(() =>
         Effect.succeed(new HerdrRawTestResponse("{oops\n")),
       );
+
       const malformed = yield* withTransport(
         malformedServer.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport.request("ping", {}, { requestId: "malformed" }).pipe(Effect.flip);
         }),
       );
+
       expect(malformed).toMatchObject({
         _tag: "HerdrInvalidResponse",
         reason: "malformed_json",
         requestId: "malformed",
       });
+
       const oversizedServer = yield* startHerdrTestServer(() =>
         Effect.succeed(new HerdrRawTestResponse(`${"x".repeat(1024 * 1024 + 1)}\n`)),
       );
+
       const oversized = yield* withTransport(
         oversizedServer.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport.request("ping", {}, { requestId: "oversized" }).pipe(Effect.flip);
         }),
       );
+
       expect(oversized).toMatchObject({
         _tag: "HerdrInvalidResponse",
         reason: "oversized_frame",
         requestId: "oversized",
       });
+
       const errorServer = yield* startHerdrTestServer((request) =>
         Effect.succeed(
           request.method === "ping"
@@ -72,15 +80,18 @@ test("transport classifies malformed, oversized, server, and timeout failures", 
             : { id: request.id, error: { code: "fixture_rejected", message: "no" } },
         ),
       );
+
       const serverFailure = yield* withTransport(
         errorServer.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport
             .request("server.stop", {}, { requestId: "server-error" })
             .pipe(Effect.flip);
         }),
       );
+
       expect(serverFailure).toBeInstanceOf(HerdrServerError);
       expect(serverFailure).toMatchObject({
         serverCode: "fixture_rejected",
@@ -88,29 +99,36 @@ test("transport classifies malformed, oversized, server, and timeout failures", 
         requestId: "server-error",
       });
       const timeoutServer = yield* startHerdrTestServer(() => Effect.void);
+
       const timeout = yield* withTransport(
         timeoutServer.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport
             .request("ping", {}, { requestId: "timeout", requestTimeout: Duration.millis(10) })
             .pipe(Effect.flip);
         }),
       );
+
       expect(timeout).toBeInstanceOf(HerdrRequestTimeout);
       expect(timeout).toMatchObject({ requestId: "timeout", timeoutMilliseconds: 10 });
+
       const partialServer = yield* startHerdrTestServer((_request, socket) =>
         Effect.sync(() => {
           socket.end('{"id":"partial","result":{"type":"pong"}}');
         }),
       );
+
       const partial = yield* withTransport(
         partialServer.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport.request("ping", {}, { requestId: "partial" }).pipe(Effect.flip);
         }),
       );
+
       expect(partial).toBeInstanceOf(HerdrTransportError);
       expect(partial).toMatchObject({ reason: "premature_close", requestId: "partial" });
     }),
@@ -122,15 +140,18 @@ test("transport classifies a missing local socket as a connection failure", (con
     Effect.gen(function* () {
       const server = yield* startHerdrTestServer(() => Effect.void);
       yield* server.close;
+
       const failure = yield* withTransport(
         server.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport
             .request("ping", {}, { requestId: "missing-socket" })
             .pipe(Effect.flip);
         }),
       );
+
       expect(failure).toBeInstanceOf(HerdrTransportError);
       expect(failure).toMatchObject({
         operation: "compatibility_check",
@@ -149,9 +170,11 @@ test("transport interruption closes an established socket", (context) =>
         server.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           const fiber = yield* transport
             .request("ping", {}, { requestId: "interrupted" })
             .pipe(Effect.forkChild);
+
           yield* server.waitFor("request");
           yield* Fiber.interrupt(fiber);
         }),
@@ -187,23 +210,28 @@ test("transport correlates responses, converts request keys, and memoizes compat
               },
         ),
       );
+
       const results = yield* withTransport(
         server.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           const first = yield* transport.request(
             "workspace.get",
             { workspaceId: "workspace-1" },
             { requestId: "request-1" },
           );
+
           const second = yield* transport.request(
             "workspace.get",
             { workspaceId: "workspace-2" },
             { requestId: "request-2" },
           );
+
           return [first, second] as const;
         }),
       );
+
       expect(results[0].requestId).toBe("request-1");
       expect(results[1].requestId).toBe("request-2");
       expect(server.requests.filter((request) => request.method === "ping")).toHaveLength(1);
@@ -226,15 +254,18 @@ test("transport rejects a response whose correlation identifier does not match",
             : { id: "different-request", result: { type: "ok" } },
         ),
       );
+
       const failure = yield* withTransport(
         server.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport
             .request("server.stop", {}, { requestId: "request-3" })
             .pipe(Effect.flip);
         }),
       );
+
       expect(failure).toBeInstanceOf(HerdrInvalidResponse);
       expect(failure).toMatchObject({ reason: "correlation_mismatch", requestId: "request-3" });
     }),
@@ -257,13 +288,16 @@ test("transport rejects invalid UTF-8 instead of accepting replacement character
           ),
         ),
       );
+
       const failure = yield* withTransport(
         server.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport.request("ping", {}).pipe(Effect.flip);
         }),
       );
+
       expect(failure).toMatchObject({ _tag: "HerdrInvalidResponse", reason: "malformed_json" });
     }),
   ));
@@ -283,16 +317,19 @@ test.for(["malformed", "timeout", "interrupted"] as const)(
                 : undefined,
           ),
         );
+
         yield* withTransport(
           server.socketPath,
           Effect.scoped(
             Effect.gen(function* () {
               const transport = yield* HerdrTransport;
+
               const handshake = transport.openStream(
                 "server.ssh_agent.register",
                 { socketPath: "/tmp/agent.sock" },
                 { requestTimeout: Duration.millis(30) },
               );
+
               if (failureMode === "interrupted") {
                 const fiber = yield* handshake.pipe(Effect.forkChild);
                 yield* server.waitFor("request", 2);
@@ -303,6 +340,7 @@ test.for(["malformed", "timeout", "interrupted"] as const)(
                   failureMode === "malformed" ? "HerdrInvalidResponse" : "HerdrRequestTimeout",
                 );
               }
+
               yield* server.waitFor("close", server.requests.length);
               expect(server.openSocketCount()).toBe(0);
             }),
@@ -317,6 +355,7 @@ test("stream handshake preserves split UTF-8 and exact coalesced trailing bytes"
     context,
     Effect.gen(function* () {
       const trailing = Buffer.from([0, 255, 10, 128]);
+
       const server = yield* startHerdrTestServer((request, socket) =>
         Effect.gen(function* () {
           if (request.method === "ping") {
@@ -326,6 +365,7 @@ test("stream handshake preserves split UTF-8 and exact coalesced trailing bytes"
                 result: { type: "pong", protocol: packageJson.herdr.protocol, version: "a🌍b" },
               }) + "\n",
             );
+
             const split = response.indexOf(Buffer.from("🌍")) + 2;
             socket.write(response.subarray(0, split));
             yield* Effect.yieldNow;
@@ -340,18 +380,22 @@ test("stream handshake preserves split UTF-8 and exact coalesced trailing bytes"
           }
         }),
       );
+
       const bytes = yield* withTransport(
         server.socketPath,
         Effect.scoped(
           Effect.gen(function* () {
             const transport = yield* HerdrTransport;
+
             const stream = yield* transport.openStream("server.ssh_agent.register", {
               socketPath: "/tmp/agent.sock",
             });
+
             return yield* Stream.runCollect(stream.readBytes);
           }),
         ),
       );
+
       expect(Buffer.concat(bytes)).toEqual(trailing);
     }),
   ));
@@ -361,13 +405,16 @@ test("compatibility retries after a transient failure and memoizes the successfu
     context,
     Effect.gen(function* () {
       let pingCount = 0;
+
       const server = yield* startHerdrTestServer((request) =>
         Effect.sync(() => {
           if (request.method === "ping" && ++pingCount === 1)
             return new HerdrRawTestResponse("{oops\n");
+
           return makeHerdrSuccessResponse(request);
         }),
       );
+
       yield* withTransport(
         server.socketPath,
         Effect.gen(function* () {
@@ -389,13 +436,16 @@ test("invalid request options fail before compatibility socket acquisition", (co
       const server = yield* startHerdrTestServer((request) =>
         Effect.succeed(makeHerdrSuccessResponse(request)),
       );
+
       const failure = yield* withTransport(
         server.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* transport.request("server.stop", {}, { requestId: "" }).pipe(Effect.flip);
         }),
       );
+
       expect(failure._tag).toBe("HerdrInvalidInput");
       expect(server.requests).toHaveLength(0);
     }),
@@ -414,6 +464,7 @@ test.for(["request", "stream"] as const)(
             Effect.gen(function* () {
               const transport = yield* HerdrTransport;
               const options = { requestId: "deadline", requestTimeout: Duration.millis(30) };
+
               const failure = yield* (
                 kind === "request"
                   ? transport.request("server.stop", {}, options)
@@ -423,6 +474,7 @@ test.for(["request", "stream"] as const)(
                       options,
                     )
               ).pipe(Effect.flip);
+
               expect(failure).toMatchObject({
                 _tag: "HerdrRequestTimeout",
                 requestId: "deadline",
@@ -464,15 +516,18 @@ test.for([
                 ),
           ),
         );
+
         const failure = yield* withTransport(
           server.socketPath,
           Effect.gen(function* () {
             const transport = yield* HerdrTransport;
+
             return yield* transport
               .request("events.wait", { matchEvent: { event: "workspace_created" } })
               .pipe(Effect.flip);
           }),
         );
+
         expect(failure._tag).toBe(tag);
       }),
     ),
@@ -483,15 +538,18 @@ test("one request timing out does not cancel another caller's shared compatibili
     context,
     Effect.gen(function* () {
       const gate = yield* Deferred.make<void>();
+
       const server = yield* startHerdrTestServer((request) =>
         request.method === "ping"
           ? Deferred.await(gate).pipe(Effect.as(makeHerdrSuccessResponse(request)))
           : Effect.succeed(makeHerdrSuccessResponse(request)),
       );
+
       const results = yield* withTransport(
         server.socketPath,
         Effect.gen(function* () {
           const transport = yield* HerdrTransport;
+
           return yield* Effect.all(
             [
               transport
@@ -510,6 +568,7 @@ test("one request timing out does not cancel another caller's shared compatibili
           );
         }),
       );
+
       expect(results[0]).toMatchObject({ _tag: "HerdrRequestTimeout", requestId: "short" });
       expect(results[1]).toMatchObject({ requestId: "long", result: { type: "ok" } });
       expect(server.requests.filter((request) => request.method === "ping")).toHaveLength(1);
@@ -522,9 +581,11 @@ function withTransport<A, E, R>(
 ) {
   return Effect.gen(function* () {
     const absolutePath = yield* parseHerdrAbsolutePath(socketPath);
+
     const supportedProtocol = yield* Schema.decodeUnknownEffect(HerdrProtocolVersion)(
       packageJson.herdr.protocol,
     );
+
     return yield* effect.pipe(
       Effect.provide(herdrTransportLayerWithoutDependencies),
       Effect.provideService(

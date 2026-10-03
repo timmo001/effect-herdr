@@ -11,12 +11,17 @@ const parseStressSeed = Schema.decodeUnknownSync(
     Schema.isBetween({ minimum: -2147483648, maximum: 2147483647 }),
   ),
 );
+
 const parseStressRepetitions = Schema.decodeUnknownSync(
   Schema.NumberFromString.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 1000 })),
 );
+
 const seed = parseStressSeed(process.env.HERDR_STRESS_SEED ?? "21021");
+
 const repetitions = parseStressRepetitions(process.env.HERDR_STRESS_REPETITIONS ?? "8");
+
 const stressParameters = { seed, runs: repetitions, maxShrinks: 0 };
+
 const stressTimeoutMs = repetitions * 5000 + 5000;
 
 beforeEach(({ onTestFailed }) => {
@@ -44,6 +49,7 @@ function fragmentStressBytes(bytes: Buffer, widths: readonly number[]) {
   const chunks: Buffer[] = [];
   let offset = 0;
   let index = 0;
+
   while (offset < bytes.length) {
     const width = widths[index % widths.length] ?? 1;
     const end = Math.min(offset + width, bytes.length);
@@ -51,6 +57,7 @@ function fragmentStressBytes(bytes: Buffer, widths: readonly number[]) {
     offset = end;
     index += 1;
   }
+
   return chunks;
 }
 
@@ -89,10 +96,13 @@ test(
               });
               const labels = suffixes.map((suffix, index) => `🌍-${index}-${suffix}`);
               const firstEventObserved = yield* Deferred.make<void>();
+
               const server: HerdrTestServer = yield* startHerdrTestServer((request, socket) =>
                 Effect.gen(function* () {
                   const response = makeHerdrSuccessResponse(request);
+
                   if (request.method !== "events.subscribe") return response;
+
                   const bytes = Buffer.from(
                     [
                       JSON.stringify(response),
@@ -108,6 +118,7 @@ test(
                       "",
                     ].join("\n"),
                   );
+
                   // Force write boundaries inside a four-byte code point and before the final delimiter.
                   // The OS may coalesce writes; no assertion depends on remote chunk boundaries.
                   const split = bytes.indexOf(Buffer.from("🌍")) + 1;
@@ -124,8 +135,10 @@ test(
                   ]);
                 }),
               );
+
               const events = yield* Effect.gen(function* () {
                 const herdr = yield* HerdrSdk;
+
                 return yield* herdr.events.subscribe([{ type: "workspace.created" }]).pipe(
                   Stream.tap((event) =>
                     event.workspace.id === "workspace-0"
@@ -136,6 +149,7 @@ test(
                   Stream.runCollect,
                 );
               }).pipe(provideStressSdk(server.socketPath));
+
               expect(events.map((event) => event.workspace.label)).toEqual(labels);
               expect(events.map((event) => event.workspace.id)).toEqual(
                 labels.map((_, index) => `workspace-${index}`),
@@ -173,17 +187,21 @@ test(
                 "sdk.stress.repetitions": repetitions,
               });
               const gates = yield* Effect.forEach([0, 1, 2, 3], () => Deferred.make<void>());
+
               const responseReady = yield* Effect.forEach([0, 1, 2, 3], () =>
                 Deferred.make<void>(),
               );
+
               const server: HerdrTestServer = yield* startHerdrTestServer((request, socket) =>
                 Effect.gen(function* () {
                   if (request.method !== "workspace.get") return makeHerdrSuccessResponse(request);
                   const index = Number(request.params.workspace_id.replace("workspace-", ""));
                   const gate = gates.at(index);
                   const ready = responseReady.at(index);
+
                   if (gate === undefined || ready === undefined)
                     throw new Error("Herdr stress received an unexpected workspace");
+
                   const bytes = Buffer.from(
                     JSON.stringify({
                       id: request.id,
@@ -196,32 +214,41 @@ test(
                       },
                     }) + "\n",
                   );
+
                   const split = sendPartialResponse ? Math.floor(bytes.length / 2) : 0;
+
                   if (split > 0) yield* server.writeChunks(socket, [bytes.subarray(0, split)]);
                   yield* Deferred.succeed(ready, undefined);
                   yield* Deferred.await(gate);
                   yield* server.writeChunks(socket, [bytes.subarray(split)]);
                 }),
               );
+
               yield* Effect.scoped(
                 Effect.gen(function* () {
                   const herdr = yield* HerdrSdk;
+
                   const pending = yield* Effect.forEach([0, 1, 2, 3], (index) =>
                     herdr.workspaces
                       .get(herdr.ids.workspace(`workspace-${index}`))
                       .pipe(Effect.forkScoped),
                   );
+
                   yield* server.waitFor("request", 5);
                   yield* Effect.forEach(responseReady, Deferred.await);
                   yield* server.waitFor("close", 1);
                   let closedCount = 1;
+
                   for (const index of releaseOrder) {
                     const gate = gates.at(index);
                     const fiber = pending.at(index);
+
                     if (gate === undefined || fiber === undefined) {
                       throw new Error("Herdr stress release index is missing");
                     }
+
                     closedCount += 1;
+
                     if (index === canceledIndex) {
                       yield* Fiber.interrupt(fiber);
                       expect(Exit.hasInterrupts(yield* Fiber.await(fiber))).toBe(true);

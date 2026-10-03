@@ -17,6 +17,7 @@ import {
 import { HerdrConfigurationError } from "./herdr-errors.ts";
 
 const DEFAULT_REQUEST_TIMEOUT = Duration.seconds(5);
+
 const SUPPORTED_HERDR_PROTOCOL = 22 as const;
 
 /**
@@ -106,10 +107,13 @@ export const HerdrConfigOptions = Schema.Struct({
 export interface HerdrConfigOptions extends Schema.Codec.Encoded<typeof HerdrConfigOptions> {}
 
 const parseHerdrConfigOptions = Schema.decodeEffect(HerdrConfigOptions);
+
 const parseHerdrRequestDeadlineFromString = Schema.decodeEffect(
   Schema.DurationFromString.pipe(Schema.decodeTo(HerdrRequestDeadline)),
 );
+
 const parseHerdrAbsolutePath = Schema.decodeEffect(HerdrAbsolutePath);
+
 const parseHerdrSessionName = Schema.decodeEffect(HerdrSessionName);
 
 /**
@@ -151,6 +155,7 @@ const ambientHerdrConfig = Config.all({
 });
 
 type AmbientHerdrConfig = Config.Success<typeof ambientHerdrConfig>;
+
 type ParsedHerdrConfigOptions = typeof HerdrConfigOptions.Type;
 
 /**
@@ -170,6 +175,7 @@ const makeHerdrConfigEffect = Effect.fn("HerdrConfig.make")(
     const parsedOptions = yield* parseHerdrConfigOptions(options);
     const ambient = yield* ambientHerdrConfig;
     const config = yield* resolveHerdrConfig(parsedOptions, ambient);
+
     return HerdrConfig.of(config);
   },
   Effect.mapError((cause) => new HerdrConfigurationError(cause)),
@@ -257,6 +263,7 @@ function resolveHerdrSocketSelection(
 
     if (options.session !== undefined) {
       const configDirectory = yield* resolveHerdrConfigDirectory(ambient);
+
       return {
         socketPath: HerdrAbsolutePath.make(
           join(configDirectory, "sessions", options.session, "herdr.sock"),
@@ -267,12 +274,15 @@ function resolveHerdrSocketSelection(
 
     if (Option.isSome(ambient.socketPath)) {
       const socketPath = yield* parseHerdrAbsolutePath(ambient.socketPath.value);
+
       return { socketPath, session: Option.none() };
     }
 
     const configDirectory = yield* resolveHerdrConfigDirectory(ambient);
+
     if (Option.isSome(ambient.session)) {
       const session = yield* parseHerdrSessionName(ambient.session.value);
+
       return {
         socketPath: HerdrAbsolutePath.make(
           join(configDirectory, "sessions", session, "herdr.sock"),
@@ -293,6 +303,7 @@ function resolveHerdrRequestTimeout(
   ambient: AmbientHerdrConfig,
 ): Effect.Effect<HerdrRequestDeadline, Schema.SchemaError> {
   if (options.requestTimeout !== undefined) return Effect.succeed(options.requestTimeout);
+
   if (Option.isNone(ambient.requestTimeout)) {
     return Effect.succeed(HerdrRequestDeadline.make(DEFAULT_REQUEST_TIMEOUT));
   }
@@ -313,6 +324,7 @@ function resolveHerdrConfigDirectory(
         Effect.map((base) => HerdrAbsolutePath.make(join(base, "herdr"))),
       );
     }
+
     return Effect.succeed(HerdrAbsolutePath.make(join(homedir(), "herdr")));
   }
 
@@ -321,5 +333,6 @@ function resolveHerdrConfigDirectory(
       Effect.map((base) => HerdrAbsolutePath.make(join(base, "herdr"))),
     );
   }
+
   return Effect.succeed(HerdrAbsolutePath.make(join(homedir(), ".config", "herdr")));
 }

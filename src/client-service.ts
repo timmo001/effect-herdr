@@ -17,6 +17,7 @@ import {
 } from "./herdr-transport.ts";
 
 const parseClientWindowTitle = Schema.decodeEffect(Schema.String);
+
 const parseClientWindowTitleResult = Schema.decodeUnknownEffect(ClientWindowTitleResult);
 
 /**
@@ -66,6 +67,7 @@ export class ClientService extends Context.Service<ClientService, IClientService
  */
 export const makeClientService = Effect.gen(function* () {
   const transport = yield* HerdrTransport;
+
   return ClientService.of({
     windowTitle: {
       set: defineHerdrOperation("ClientService.windowTitle.set", (title, options = {}) =>
@@ -75,11 +77,13 @@ export const makeClientService = Effect.gen(function* () {
             parseClientWindowTitle,
             title,
           );
+
           const response = yield* transport.request(
             "client.window_title.set",
             { title: parsedTitle },
             options,
           );
+
           return yield* decodeHerdrWire(
             parseClientWindowTitleResult,
             response.result,
@@ -90,6 +94,7 @@ export const makeClientService = Effect.gen(function* () {
       clear: defineHerdrOperation("ClientService.windowTitle.clear", (options = {}) =>
         Effect.gen(function* () {
           const response = yield* transport.request("client.window_title.clear", {}, options);
+
           return yield* decodeHerdrWire(
             parseClientWindowTitleResult,
             response.result,

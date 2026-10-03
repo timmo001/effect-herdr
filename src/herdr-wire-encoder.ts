@@ -14,16 +14,21 @@ const PaneReadRequestParameters = PaneReadInput.mapFields((fields) => ({
   ...fields,
   lines: Schema.OptionFromNullOr(Schema.requiredKey(fields.lines.from)),
 }));
+
 const AgentWaitRequestParameters = AgentWaitInput.mapFields((fields) => ({
   ...fields,
   timeoutMs: Schema.OptionFromNullOr(Schema.requiredKey(fields.timeoutMs.from)),
 }));
+
 const AgentPromptRequestParameters = AgentPromptInput.mapFields((fields) => ({
   ...fields,
   wait: Schema.OptionFromOptionalKey(AgentWaitRequestParameters),
 }));
+
 const encodePaneReadRequest = Schema.encodeEffect(PaneReadRequestParameters);
+
 const encodeAgentWaitRequest = Schema.encodeEffect(AgentWaitRequestParameters);
+
 const encodeAgentPromptRequest = Schema.encodeEffect(AgentPromptRequestParameters);
 
 /**
@@ -128,22 +133,28 @@ function isWireParameterArray<Value extends WireParameterJson>(
 
 function encodeWireParameterValue<Value extends WireParameterJson>(value: Value): string {
   if (value === undefined) return "null";
+
   if (isWireParameterArray(value)) {
     return `[${Array.from(value, (child) => encodeWireParameterValue(child)).join(",")}]`;
   }
+
   if (value === null || typeof value !== "object") return JSON.stringify(value);
 
   const fields: string[] = [];
+
   for (const [key, child] of Object.entries<WireParameterJson>(value)) {
     if (child === undefined) continue;
     const wireKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+
     // Dictionaries are opaque JSON data, even when their keys look like protocol fields.
     // Serializing directly also preserves own __proto__ keys without assigning to a prototype.
     const encodedChild =
       key === "env" || key === "tokens" || key === "stateLabels"
         ? JSON.stringify(child)
         : encodeWireParameterValue(child);
+
     fields.push(`${JSON.stringify(wireKey)}:${encodedChild}`);
   }
+
   return `{${fields.join(",")}}`;
 }

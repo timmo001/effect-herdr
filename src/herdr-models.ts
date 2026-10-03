@@ -31,6 +31,7 @@ import {
 } from "./herdr-domain.ts";
 
 const optionalString = Schema.OptionFromOptionalNullOr(Schema.String);
+
 const optionalAbsolutePath = Schema.OptionFromOptionalNullOr(HerdrAbsolutePath);
 
 /**
