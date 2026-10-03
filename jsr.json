@@ -6,8 +6,9 @@
   "publish": {
     "include": [
       "jsr/index.js",
-      "dist/*.mjs",
-      "dist/*.d.mts",
+      "dist/**/*.js",
+      "dist/**/*.d.ts",
+      "dist/schema/*.json",
       "package.json",
       "README.md",
       "LICENSE"

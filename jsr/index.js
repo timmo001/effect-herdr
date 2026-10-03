@@ -1,2 +1,2 @@
-/* @ts-self-types="../dist/index.d.mts" */
-export * from "../dist/index.mjs";
+/* @ts-self-types="../dist/index.d.ts" */
+export * from "../dist/index.js";
