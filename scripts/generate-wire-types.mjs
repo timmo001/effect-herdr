@@ -1,4 +1,4 @@
-import { Effect, FileSystem, Schema } from "effect";
+import { Effect, FileSystem, Predicate, Schema } from "effect";
 import * as NodeFileSystem from "@effect/platform-node-shared/NodeFileSystem";
 import * as NodeRuntime from "@effect/platform-node-shared/NodeRuntime";
 import { resolve, sep } from "node:path";
@@ -253,7 +253,7 @@ NodeRuntime.runMain(
     Effect.catch((error) =>
       Effect.sync(() => {
         console.error(
-          error._tag === "WireGenerationError"
+          Predicate.isTagged(error, "WireGenerationError")
             ? error.message
             : `Wire generation failed (${error._tag})`,
         );
@@ -271,9 +271,9 @@ function rewriteLocalReferences(value, prefix, replacement) {
     return;
   }
 
-  if (value === null || typeof value !== "object") return;
+  if (value === null || !Predicate.isObjectKeyword(value)) return;
 
-  if ("$ref" in value && typeof value.$ref === "string" && value.$ref.startsWith(prefix)) {
+  if ("$ref" in value && Predicate.isString(value.$ref) && value.$ref.startsWith(prefix)) {
     value.$ref = replacement + value.$ref.slice(prefix.length);
   }
 
