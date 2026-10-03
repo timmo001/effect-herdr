@@ -18,7 +18,7 @@ import {
   Stream,
   Tracer,
 } from "effect";
-import herdrApiSchema from "../schema/herdr-api.schema.json" with { type: "json" };
+import herdrApiSchema from "./schema/herdr-api.schema.json" with { type: "json" };
 import type { EventEnvelope } from "./generated/wire-event.ts";
 import type { SubscriptionEventEnvelope } from "./generated/wire-subscription-event.ts";
 import { isHerdrWireErrorResponse, parseHerdrWireEvent } from "./herdr-wire-parser.ts";
@@ -294,8 +294,7 @@ function decodeEventLine(
 }
 
 type HerdrEventStreamInput =
-  | { readonly _tag: "Bytes"; readonly value: Uint8Array }
-  | { readonly _tag: "End" };
+  { readonly _tag: "Bytes"; readonly value: Uint8Array } | { readonly _tag: "End" };
 
 function decodeHerdrEventStream<const Type extends EventSubscriptionSpec["type"]>(
   bytes: Stream.Stream<Uint8Array, HerdrTransportError>,

@@ -1,5 +1,5 @@
 import { Effect, type Scope } from "effect";
-import { expectTypeOf } from "vite-plus/test";
+import { expectTypeOf } from "vitest";
 import {
   type IHerdrSdk,
   type ClientShellConnectInputEncoded,

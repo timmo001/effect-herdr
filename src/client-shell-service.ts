@@ -112,9 +112,7 @@ export type ClientShellConnectInputEncoded = typeof ClientShellConnectInput.Enco
 export type HerdrEndpointConnectError = HerdrTransportRequestError | EndpointRequestError;
 /** Domain operation failures for one live endpoint connection. @category errors @since 0.9.0 */
 export type ClientShellOperationError =
-  | EndpointRequestError
-  | HerdrInvalidInput
-  | HerdrEndpointStaleReference;
+  EndpointRequestError | HerdrInvalidInput | HerdrEndpointStaleReference;
 
 const parseConnect = Schema.decodeEffect(ClientShellConnectInput, { onExcessProperty: "error" });
 const parseProjection = Schema.decodeEffect(Schema.fromJsonString(ClientShellProjection));

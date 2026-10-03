@@ -29,7 +29,7 @@ import {
   wireResultTypesByMethod,
 } from "./generated/wire-method-map.ts";
 import type { ErrorResponse } from "./generated/wire-error-response.ts";
-import herdrApiSchema from "../schema/herdr-api.schema.json" with { type: "json" };
+import herdrApiSchema from "./schema/herdr-api.schema.json" with { type: "json" };
 import type { ResponseResult } from "./generated/wire-success-response.ts";
 import { isExpectedWireResult, parseHerdrWireResponse } from "./herdr-wire-parser.ts";
 import { encodeWireRequest, type HerdrWireParameters } from "./herdr-wire-encoder.ts";
@@ -110,8 +110,7 @@ export type HerdrTransportRequestError =
  * @since 0.8.2
  */
 export type HerdrTransportMethodError<Method extends WireMethod> =
-  | HerdrTransportRequestError
-  | (Method extends "events.wait" ? HerdrUnsupportedEvent : never);
+  HerdrTransportRequestError | (Method extends "events.wait" ? HerdrUnsupportedEvent : never);
 
 type HerdrStreamWireMethod = "events.subscribe" | "server.ssh_agent.register";
 

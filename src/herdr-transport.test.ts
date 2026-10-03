@@ -1,5 +1,5 @@
 import { Deferred, Duration, Effect, Fiber, Option, Schema, Stream, type Scope } from "effect";
-import { expect, test, type TestContext } from "vite-plus/test";
+import { expect, test, type TestContext } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import { HerdrConfig, HerdrProtocolVersion, HerdrRequestDeadline } from "./herdr-config.ts";
 import { parseHerdrAbsolutePath } from "./herdr-domain.ts";

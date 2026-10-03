@@ -1,9 +1,0 @@
-{
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "paths": {
-      "@timmo001/effect-herdr": ["../src/index.ts"]
-    }
-  },
-  "include": ["./**/*.ts"]
-}

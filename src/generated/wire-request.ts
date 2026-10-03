@@ -1,4 +1,4 @@
-/** Generated from schema/herdr-api.schema.json; do not edit. */
+/** Generated from src/schema/herdr-api.schema.json; do not edit. */
 
 export type Request = {
   id: string;
@@ -558,13 +558,7 @@ export type AgentViewField =
       [k: string]: unknown;
     };
 export type AgentViewBuiltinField =
-  | "status"
-  | "workspace_id"
-  | "tab_id"
-  | "pane_id"
-  | "agent"
-  | "seen"
-  | "state_change_seq";
+  "status" | "workspace_id" | "tab_id" | "pane_id" | "agent" | "seen" | "state_change_seq";
 export type AgentViewValue =
   | string
   | boolean

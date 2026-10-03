@@ -1,4 +1,4 @@
-/** Generated from schema/herdr-api.schema.json; do not edit. */
+/** Generated from src/schema/herdr-api.schema.json; do not edit. */
 
 export type EventData =
   | {

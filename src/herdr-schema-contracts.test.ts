@@ -1,5 +1,5 @@
 import { Arbitrary, Duration, Effect, Option, Schema } from "effect";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 import {
   AgentName,
   AgentTarget,

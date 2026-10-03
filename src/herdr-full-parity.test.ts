@@ -1,6 +1,6 @@
 import { Effect, Stream } from "effect";
 import { wireResultTypesByMethod } from "./generated/wire-method-map.ts";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import { HerdrAbsolutePath } from "./herdr-domain.ts";
 import { HerdrSdk, herdrSdkLayerFromOptions } from "./herdr-sdk.ts";

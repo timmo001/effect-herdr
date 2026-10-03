@@ -1,5 +1,5 @@
 import { Arbitrary, Deferred, Duration, Effect, Exit, Fiber, Schema, Stream } from "effect";
-import { beforeEach, expect, test } from "vite-plus/test";
+import { beforeEach, expect, test } from "vitest";
 import { assertHerdrProperty, runHerdrTest } from "./herdr-test-runtime.ts";
 import { HerdrAbsolutePath, HerdrSdk, herdrSdkLayerFromOptions } from "./index.ts";
 import { startHerdrTestServer, type HerdrTestServer } from "./herdr-test-server.ts";

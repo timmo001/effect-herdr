@@ -1,10 +1,11 @@
 {
+  "$schema": "./node_modules/@effect/tsgo/schema.json",
   "compilerOptions": {
-    "target": "esnext",
-    "lib": ["es2023"],
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "moduleDetection": "force",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
     "resolveJsonModule": true,
     "types": ["node"],
     "strict": true,
@@ -13,16 +14,41 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
-    "declaration": true,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "allowJs": true,
-    "checkJs": true,
-    "esModuleInterop": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "skipLibCheck": true
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "ignoreEffectWarningsInTscExitCode": true,
+        "diagnosticSeverity": {
+          "overriddenSchemaConstructor": "warning"
+        },
+        "overrides": [
+          {
+            "include": ["src/**/*.tst.ts"],
+            "options": {
+              "diagnosticSeverity": {
+                "floatingEffect": "off"
+              }
+            }
+          }
+        ]
+      }
+    ]
   },
-  "include": ["scripts/**/*.ts", "scripts/**/*.mjs", "src/**/*.ts", "vite.config.ts"],
-  "exclude": ["dist", "node_modules", "repos"]
+  "include": ["src"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.tst.ts",
+    "src/herdr-endpoint-test-server.ts",
+    "src/herdr-test-runtime.ts",
+    "src/herdr-test-server.ts",
+    "src/herdr-wire-fixtures.ts"
+  ]
 }

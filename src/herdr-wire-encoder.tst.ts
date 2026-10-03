@@ -1,4 +1,4 @@
-import { expectTypeOf } from "vite-plus/test";
+import { expectTypeOf } from "vitest";
 import type { WireMethod } from "./generated/wire-method-map.ts";
 import { encodeWireRequest, type HerdrWireParameters } from "./herdr-wire-encoder.ts";
 

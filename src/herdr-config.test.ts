@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { ConfigProvider, Duration, Effect, Option } from "effect";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import {
   HerdrConfig,

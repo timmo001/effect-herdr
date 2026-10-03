@@ -2,7 +2,7 @@ import { NodeFileSystem } from "@effect/platform-node-shared";
 import { Deferred, Effect, Exit, Fiber, FileSystem, Logger } from "effect";
 import { createConnection, type Socket } from "node:net";
 import { dirname, join } from "node:path";
-import { expect, expectTypeOf, test, type TestContext } from "vite-plus/test";
+import { expect, expectTypeOf, test, type TestContext } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import {
   HerdrRawTestResponse,
@@ -186,7 +186,7 @@ test("fixture scope interrupts callback and scheduled work, releases gates, reje
       const server = yield* startHerdrTestServer(() =>
         Effect.gen(function* () {
           yield* Deferred.succeed(callbackStarted, undefined);
-          yield* Effect.never;
+          return yield* Effect.never;
         }).pipe(Effect.ensuring(Deferred.succeed(callbackStopped, undefined))),
       );
       const gate = yield* server.createResponseGate();

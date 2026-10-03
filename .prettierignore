@@ -1,0 +1,6 @@
+node_modules/
+dist/
+bun.lock
+LICENSE
+.agents/skills/
+src/schema/herdr-api.schema.json

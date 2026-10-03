@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "allowJs": true,
+    "checkJs": true,
+    "paths": {
+      "@timmo001/effect-herdr": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "examples", "scripts", "vitest.config.ts"],
+  "exclude": []
+}

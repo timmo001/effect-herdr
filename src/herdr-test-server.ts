@@ -3,7 +3,7 @@ import { Cause, Deferred, Effect, Exit, Fiber, FileSystem, Schema, Scope } from 
 import { createServer, type Socket } from "node:net";
 import { join } from "node:path";
 import { Ajv2020 } from "ajv/dist/2020.js";
-import herdrApiSchema from "../schema/herdr-api.schema.json" with { type: "json" };
+import herdrApiSchema from "./schema/herdr-api.schema.json" with { type: "json" };
 import type { ErrorResponse } from "./generated/wire-error-response.ts";
 import type { Request } from "./generated/wire-request.ts";
 import type { SuccessResponse } from "./generated/wire-success-response.ts";

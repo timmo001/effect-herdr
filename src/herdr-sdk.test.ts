@@ -1,7 +1,7 @@
 import { Effect, Option } from "effect";
 import type { WorkspaceInfo } from "./generated/wire-success-response.ts";
 import { HerdrAbsolutePath, HerdrSdk, herdrSdkLayerFromOptions } from "./index.ts";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import { startHerdrTestServer } from "./herdr-test-server.ts";
 

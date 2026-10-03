@@ -1,6 +1,6 @@
 import { Duration, Effect, Option, Schema } from "effect";
 import type { PaneInfo, TabInfo, WorkspaceInfo } from "./generated/wire-success-response.ts";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import { HerdrConfig, HerdrRequestDeadline, type IHerdrConfig } from "./herdr-config.ts";
 import { HerdrAbsolutePath, WorkspaceId } from "./herdr-domain.ts";

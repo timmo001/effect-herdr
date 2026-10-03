@@ -6,7 +6,7 @@
  * @since 0.8.2
  */
 import { Ajv2020, type ErrorObject } from "ajv/dist/2020.js";
-import herdrApiSchema from "../schema/herdr-api.schema.json" with { type: "json" };
+import herdrApiSchema from "./schema/herdr-api.schema.json" with { type: "json" };
 import type { ErrorResponse } from "./generated/wire-error-response.ts";
 import type { EventEnvelope } from "./generated/wire-event.ts";
 import type { SubscriptionEventEnvelope } from "./generated/wire-subscription-event.ts";

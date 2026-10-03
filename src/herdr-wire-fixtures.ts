@@ -1,5 +1,5 @@
 import { Ajv2020 } from "ajv/dist/2020.js";
-import herdrApiSchema from "../schema/herdr-api.schema.json" with { type: "json" };
+import herdrApiSchema from "./schema/herdr-api.schema.json" with { type: "json" };
 import { wireResultTypesByMethod } from "./generated/wire-method-map.ts";
 import type { SuccessResponse } from "./generated/wire-success-response.ts";
 import type { HerdrTestRequest } from "./herdr-test-server.ts";

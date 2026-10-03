@@ -1,4 +1,4 @@
-/** Generated from schema/herdr-api.schema.json; do not edit. */
+/** Generated from src/schema/herdr-api.schema.json; do not edit. */
 
 export type ResponseResult =
   | {
@@ -588,11 +588,7 @@ export type EventKind =
   | "pane_agent_status_changed"
   | "layout_updated";
 export type NotificationShowReason =
-  | "shown"
-  | "disabled"
-  | "rate_limited"
-  | "no_foreground_client"
-  | "busy";
+  "shown" | "disabled" | "rate_limited" | "no_foreground_client" | "busy";
 export type ClientWindowTitleReason = "set" | "cleared" | "no_foreground_client";
 export type IntegrationState = "not_installed" | "current" | "outdated";
 export type IntegrationTarget =

@@ -1,5 +1,5 @@
 import { Effect, Option } from "effect";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 import {
   HerdrAbsolutePath,
   HerdrSdk,

@@ -73,10 +73,7 @@ export interface EndpointConnectionSettings {
 }
 /** Request errors preserve server rejection separately from connection failure. @category errors @since 0.9.0 */
 export type EndpointRequestError =
-  | HerdrEndpointFailure
-  | HerdrEndpointUnsupportedMethod
-  | HerdrServerError
-  | HerdrUnsupportedResult;
+  HerdrEndpointFailure | HerdrEndpointUnsupportedMethod | HerdrServerError | HerdrUnsupportedResult;
 /** Connection-local request methods; socket subscriptions and SSH agent leases use their own transport. @category models @since 0.9.0 */
 export type EndpointRequestMethod = Exclude<
   WireMethod,
@@ -164,8 +161,7 @@ export const acquireEndpointConnection = (
     let bootId: string | undefined;
     let welcomed = false;
     let handler:
-      | ((message: EndpointServerMessage) => Effect.Effect<void, HerdrEndpointFailure>)
-      | undefined;
+      ((message: EndpointServerMessage) => Effect.Effect<void, HerdrEndpointFailure>) | undefined;
     const earlyMessages: EndpointServerMessage[] = [];
     let earlyBytes = 0;
     const ensureOpen = Effect.suspend(() =>

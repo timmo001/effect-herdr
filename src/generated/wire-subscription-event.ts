@@ -1,16 +1,12 @@
-/** Generated from schema/herdr-api.schema.json; do not edit. */
+/** Generated from src/schema/herdr-api.schema.json; do not edit. */
 
 export type SubscriptionEventData =
-  | PaneOutputMatchedEvent
-  | PaneAgentStatusChangedEvent
-  | PaneScrollChangedEvent;
+  PaneOutputMatchedEvent | PaneAgentStatusChangedEvent | PaneScrollChangedEvent;
 export type ReadFormat = "text" | "ansi";
 export type ReadSource = "visible" | "recent" | "recent_unwrapped" | "detection";
 export type AgentStatus = "idle" | "working" | "blocked" | "done" | "unknown";
 export type SubscriptionEventKind =
-  | "pane.output_matched"
-  | "pane.agent_status_changed"
-  | "pane.scroll_changed";
+  "pane.output_matched" | "pane.agent_status_changed" | "pane.scroll_changed";
 
 export interface SubscriptionEventEnvelope {
   data: SubscriptionEventData;

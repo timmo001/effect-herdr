@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Effect, Fiber, Option, Queue, Result, Stream, type Scope } from "effect";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 import {
   HerdrAbsolutePath,
   HerdrSdk,

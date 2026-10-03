@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import { HerdrAbsolutePath } from "./herdr-domain.ts";
 import { HerdrUnsupportedResult } from "./herdr-errors.ts";

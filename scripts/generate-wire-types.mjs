@@ -53,7 +53,7 @@ const generateWireTypes = Effect.gen(function* () {
       }),
     );
   }
-  const schemaPath = new URL("../schema/herdr-api.schema.json", import.meta.url);
+  const schemaPath = new URL("../src/schema/herdr-api.schema.json", import.meta.url);
   const outputDirectory = argumentsList[1];
   const generatedDirectory =
     outputDirectory === undefined
@@ -205,7 +205,7 @@ const generateWireTypes = Effect.gen(function* () {
     const source = yield* Effect.tryPromise({
       try: () =>
         compile(schema, typeName, {
-          bannerComment: "/** Generated from schema/herdr-api.schema.json; do not edit. */",
+          bannerComment: "/** Generated from src/schema/herdr-api.schema.json; do not edit. */",
           format: true,
           style: { singleQuote: false, semi: true, trailingComma: "all" },
         }),
