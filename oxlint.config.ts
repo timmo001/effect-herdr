@@ -5,5 +5,6 @@ export default {
   ignorePatterns: ["dist/**", "src/generated/**"],
   options: {
     typeAware: true,
+    maxWarnings: 0,
   },
 };
