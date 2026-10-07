@@ -6,22 +6,30 @@ bun = "1.4.2"
 
 [tasks.install]
 description = "Install dependencies"
-run = "bun install"
+run = "bun install --frozen-lockfile"
 
 [tasks.lint]
 description = "Lint source with the shared Oxlint rules"
+depends = ["install"]
+wait_for = ["generate"]
 run = "bun run lint"
 
 [tasks.typecheck]
 description = "Type-check source, type tests, tooling and examples"
+depends = ["install"]
+wait_for = ["generate"]
 run = "bun run typecheck"
 
 [tasks.format]
 description = "Format source and configuration"
+depends = ["install"]
+wait_for = ["generate"]
 run = "bun run format"
 
 [tasks."format:check"]
 description = "Check formatting without writing"
+depends = ["install"]
+wait_for = ["generate"]
 run = "bun run format:check"
 
 [tasks.check]
@@ -30,14 +38,19 @@ depends = ["lint", "typecheck", "test", "format:check"]
 
 [tasks.test]
 description = "Run SDK contract tests"
+depends = ["install"]
+wait_for = ["generate"]
 run = "bun run test"
 
 [tasks.build]
 description = "Build ESM and TypeScript declarations into dist"
+depends = ["install"]
+wait_for = ["generate"]
 run = "bun run build"
 
 [tasks.generate]
 description = "Regenerate wire types from the bundled Herdr schema"
+depends = ["install"]
 run = "bun run generate"
 
 [tasks."generate:check"]

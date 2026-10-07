@@ -736,9 +736,7 @@ upstream source for agents; production code imports installed packages, never re
 Use the tool versions pinned in [mise.toml](mise.toml) and Bun for dependencies.
 
 ```sh
-mise run install
-mise run check
-mise run build
+mise run check ::: build
 ```
 
 `mise run check` lints with the shared `@timmo001/oxlint-rules` preset, typechecks source and
