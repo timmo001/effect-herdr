@@ -322,7 +322,7 @@ test.for(["malformed", "timeout", "interrupted"] as const)(
               const handshake = transport.openStream(
                 "server.ssh_agent.register",
                 { socketPath: "/tmp/agent.sock" },
-                { requestTimeout: Duration.millis(30) },
+                { requestTimeout: Duration.millis(failureMode === "timeout" ? 500 : 5_000) },
               );
 
               if (failureMode === "interrupted") {
