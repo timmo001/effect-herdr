@@ -30,13 +30,13 @@ jobs:
         run: "mise run check ::: generate:check ::: build"
 
   actionlint:
-    uses: timmo001/workflows/.github/workflows/lint-actionlint.yml@2fb8b15d5e72caaea35cc5e4541733d87ef66002 # 20261008.0
+    uses: timmo001/workflows/.github/workflows/lint-actionlint.yml@2fb2fa1ffdd2f4808768bf86828482660e366a13 # 20261008.3
 
   markdownlint:
-    uses: timmo001/workflows/.github/workflows/lint-markdownlint.yml@2fb8b15d5e72caaea35cc5e4541733d87ef66002 # 20261008.0
+    uses: timmo001/workflows/.github/workflows/lint-markdownlint.yml@2fb2fa1ffdd2f4808768bf86828482660e366a13 # 20261008.3
 
   yamllint:
-    uses: timmo001/workflows/.github/workflows/lint-yamllint.yml@2fb8b15d5e72caaea35cc5e4541733d87ef66002 # 20261008.0
+    uses: timmo001/workflows/.github/workflows/lint-yamllint.yml@2fb2fa1ffdd2f4808768bf86828482660e366a13 # 20261008.3
 
   jsonlint:
-    uses: timmo001/workflows/.github/workflows/lint-jsonlint.yml@2fb8b15d5e72caaea35cc5e4541733d87ef66002 # 20261008.0
+    uses: timmo001/workflows/.github/workflows/lint-jsonlint.yml@2fb2fa1ffdd2f4808768bf86828482660e366a13 # 20261008.3
