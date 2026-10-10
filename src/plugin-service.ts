@@ -216,7 +216,7 @@ export const makePluginService = Effect.gen(function* () {
     input: PluginPaneOpenInputEncoded,
     options: HerdrTransportRequestOptionsEncoded = {},
   ): Effect.Effect<PluginPane | void, HerdrTransportRequestError> {
-    return Effect.fn("PluginService.panes.open")(function* () {
+    return Effect.gen(function* () {
       const parsed = yield* decodeHerdrInput(
         "PluginService.panes.open",
         parsePluginPaneOpenInput,
@@ -275,7 +275,7 @@ export const makePluginService = Effect.gen(function* () {
         response.result.plugin_pane,
         response.requestId,
       );
-    })();
+    }).pipe(Effect.withSpan("PluginService.panes.open"));
   }
 
   const actions: IPluginActions = {

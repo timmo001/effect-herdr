@@ -1,5 +1,5 @@
 import { NodeFileSystem } from "@effect/platform-node-shared";
-import { Deferred, Effect, Exit, Fiber, FileSystem, Logger, Match } from "effect";
+import { Data, Deferred, Effect, Exit, Fiber, FileSystem, Logger, Match } from "effect";
 import { createConnection, type Socket } from "node:net";
 import { dirname, join } from "node:path";
 import { expect, expectTypeOf, test, type TestContext } from "vitest";
@@ -15,13 +15,19 @@ const requestBytes = Buffer.from(
   `${JSON.stringify({ id: "secret-request-id", method: "pane.read", params: { pane_id: "secret-pane-id", source: "visible", lines: null } })}\n`,
 );
 
+class FixtureTestError extends Data.TaggedError("FixtureTestError")<{
+  readonly message: string;
+}> {}
+
 const connectFixture = (socketPath: string) =>
   Effect.acquireRelease(
-    Effect.callback<Socket, Error>((resume) => {
+    Effect.callback<Socket, FixtureTestError>((resume) => {
       const socket = createConnection(resolveHerdrSocketEndpoint(socketPath));
 
       const onError = (): void =>
-        resume(Effect.fail(new Error("Fixture test client connection failed")));
+        resume(
+          Effect.fail(new FixtureTestError({ message: "Fixture test client connection failed" })),
+        );
 
       socket.on("error", onError);
       socket.once("connect", () => resume(Effect.succeed(socket)));
@@ -37,7 +43,7 @@ const connectFixture = (socketPath: string) =>
   );
 
 const readBytes = (socket: Socket, length: number) =>
-  Effect.callback<Buffer, Error>((resume) => {
+  Effect.callback<Buffer, FixtureTestError>((resume) => {
     let bytes = Buffer.alloc(0);
 
     const onData = (chunk: Buffer): void => {
@@ -47,7 +53,11 @@ const readBytes = (socket: Socket, length: number) =>
     };
 
     const onClose = (): void =>
-      resume(Effect.fail(new Error("Fixture test client closed before bytes arrived")));
+      resume(
+        Effect.fail(
+          new FixtureTestError({ message: "Fixture test client closed before bytes arrived" }),
+        ),
+      );
 
     socket.on("data", onData);
     socket.once("close", onClose);
@@ -169,7 +179,7 @@ test.for(["throw", "effect", "parse", "schema", "utf8"] as const)(
         const server = yield* startHerdrTestServer(() => {
           if (mode === "throw") throw new Error("secret-callback-error");
 
-          return Effect.fail(new Error("secret-effect-error"));
+          return Effect.fail(new FixtureTestError({ message: "secret-effect-error" }));
         });
 
         const client = yield* connectFixture(server.socketPath);
@@ -262,7 +272,7 @@ test("fixture automatic cleanup fails on an unobserved callback failure", (conte
             Effect.gen(function* () {
               yield* Deferred.succeed(entered, undefined);
 
-              return yield* Effect.fail(new Error("secret-unobserved-failure"));
+              return yield* new FixtureTestError({ message: "secret-unobserved-failure" });
             }),
           );
 
@@ -327,7 +337,10 @@ test("fixture schedule accepts zero delay and supervises work failures", (contex
     context,
     Effect.gen(function* () {
       const server = yield* startHerdrTestServer(() => Effect.void);
-      yield* server.schedule(0, Effect.fail(new Error("secret-scheduled-failure")));
+      yield* server.schedule(
+        0,
+        Effect.fail(new FixtureTestError({ message: "secret-scheduled-failure" })),
+      );
       const failure = yield* Effect.flip(server.waitFor("request"));
       expect(failure.message).not.toContain("secret");
       yield* Effect.flip(server.close);
@@ -389,7 +402,7 @@ test("fixture logs bounded metadata only for enclosing failures, not successful 
           client.write(requestBytes);
           yield* server.waitFor("request");
 
-          return yield* Effect.fail(new Error("secret-caller-assertion"));
+          return yield* new FixtureTestError({ message: "secret-caller-assertion" });
         }),
       ).pipe(Effect.exit, Effect.provide(Logger.layer([logger])));
       expect(messages).toHaveLength(1);

@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { ConfigProvider, Duration, Effect, Option } from "effect";
+import { ConfigProvider, Duration, Effect, Layer, Option } from "effect";
 import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
 import {
@@ -145,8 +145,11 @@ test("configuration Layer exposes the resolved yieldable service", (context) =>
       );
 
       const config = yield* HerdrConfig.pipe(
-        Effect.provide(herdrConfigLayerFromOptions({ session: "layer-session" })),
-        Effect.provide(providerLayer),
+        Effect.provide(
+          herdrConfigLayerFromOptions({ session: "layer-session" }).pipe(
+            Layer.provide(providerLayer),
+          ),
+        ),
       );
 
       expect(config.socketPath).toBe(

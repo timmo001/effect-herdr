@@ -427,7 +427,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
     const operation =
       method === "events.subscribe" ? "event_subscription" : "ssh_agent_registration";
 
-    return Effect.fn("HerdrTransport.openStream")(function* () {
+    return Effect.gen(function* () {
       const parsedOptions = yield* parseHerdrTransportRequestOptions(options).pipe(
         Effect.mapError((cause) => new HerdrInvalidInput("transport.requestOptions", cause)),
       );
@@ -509,7 +509,10 @@ export const makeHerdrTransport = Effect.gen(function* () {
             Effect.fail(new HerdrRequestTimeout(operation, requestId, Duration.toMillis(deadline))),
         }),
       );
-    }, Effect.onExit(annotateHerdrTransportExit))();
+    }).pipe(
+      Effect.onExit(annotateHerdrTransportExit),
+      Effect.withSpan("HerdrTransport.openStream"),
+    );
   };
 
   function request<Method extends HerdrOrdinaryWireMethod>(
@@ -533,7 +536,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
     HerdrTransportSuccess<Method>,
     HerdrTransportRequestError | HerdrUnsupportedEvent
   > {
-    return Effect.fn("HerdrTransport.request")(function* () {
+    return Effect.gen(function* () {
       const parsedOptions = yield* parseHerdrTransportRequestOptions(options).pipe(
         Effect.mapError((cause) => new HerdrInvalidInput("transport.requestOptions", cause)),
       );
@@ -586,7 +589,7 @@ export const makeHerdrTransport = Effect.gen(function* () {
             ),
         }),
       );
-    }, Effect.onExit(annotateHerdrTransportExit))();
+    }).pipe(Effect.onExit(annotateHerdrTransportExit), Effect.withSpan("HerdrTransport.request"));
   }
 
   return HerdrTransport.of({ openStream, request });

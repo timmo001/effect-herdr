@@ -1,4 +1,4 @@
-import { Duration, Effect, Option, Schema } from "effect";
+import { Duration, Effect, Layer, Option, Schema } from "effect";
 import type { PaneInfo, TabInfo, WorkspaceInfo } from "./generated/wire-success-response.ts";
 import { expect, test } from "vitest";
 import { runHerdrTest } from "./herdr-test-runtime.ts";
@@ -155,8 +155,11 @@ function withWorkspaceService<A, E>(
   };
 
   return effect.pipe(
-    Effect.provide(workspaceServiceLayerWithoutDependencies),
-    Effect.provide(herdrTransportLayerWithoutDependencies),
+    Effect.provide(
+      workspaceServiceLayerWithoutDependencies.pipe(
+        Layer.provideMerge(herdrTransportLayerWithoutDependencies),
+      ),
+    ),
     Effect.provideService(HerdrConfig, HerdrConfig.of(config)),
   );
 }

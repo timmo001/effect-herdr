@@ -27,7 +27,8 @@
         "name": "@effect/language-service",
         "ignoreEffectWarningsInTscExitCode": true,
         "diagnosticSeverity": {
-          "overriddenSchemaConstructor": "warning"
+          "overriddenSchemaConstructor": "off",
+          "unstableApiUsage": "off"
         },
         "overrides": [
           {
