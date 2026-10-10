@@ -57,7 +57,7 @@
   "devDependencies": {
     "@effect/tsgo": "0.51.1",
     "@oxlint/plugins": "1.87.0",
-    "@timmo001/oxlint-rules": "0.5.0",
+    "@timmo001/oxlint-rules": "0.6.2",
     "@types/node": "26.6.4",
     "json-schema-to-typescript": "16.0.0",
     "oxlint": "1.87.0",
