@@ -57,6 +57,7 @@
   "devDependencies": {
     "@effect/tsgo": "0.51.1",
     "@oxlint/plugins": "1.87.0",
+    "@timmo001/effect-gh": "0.5.3",
     "@timmo001/oxlint-rules": "0.6.2",
     "@types/node": "26.6.4",
     "json-schema-to-typescript": "16.0.0",
@@ -76,6 +77,6 @@
   ],
   "herdr": {
     "protocol": 22,
-    "upstreamCommit": "48292af8e33a08c8030b7f1512c8d0da739f5ab1"
+    "upstreamCommit": "7b116c05bfda646af39d2524c54e70c751f57ee8"
   }
 }
