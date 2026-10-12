@@ -1,7 +1,9 @@
+import * as NodeChildProcessSpawner from "@effect/platform-node-shared/NodeChildProcessSpawner";
 import * as NodeFileSystem from "@effect/platform-node-shared/NodeFileSystem";
+import * as NodePath from "@effect/platform-node-shared/NodePath";
 import * as NodeRuntime from "@effect/platform-node-shared/NodeRuntime";
-import { Config, Effect, FileSystem, Option, Predicate, Redacted, Schema } from "effect";
-import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
+import { Api, layer as ghLayer } from "@timmo001/effect-gh";
+import { Effect, FileSystem, Layer, Predicate, Schema } from "effect";
 import { fileURLToPath } from "node:url";
 import { format, resolveConfig } from "prettier";
 
@@ -9,7 +11,9 @@ import { format, resolveConfig } from "prettier";
 // at the tag, write it to `src/schema/herdr-api.schema.json` in the
 // repository's Prettier style, and record its protocol and the tag's commit
 // under `herdr` in `package.json`. `mise run tooling:refresh <tag>` runs this,
-// then regenerates the wire types.
+// then regenerates the wire types. Both GitHub reads go through the `gh` CLI,
+// so it must be installed and authenticated (`gh auth login`, or `GH_TOKEN`
+// in automation).
 
 const repository = "herdrdev/herdr";
 
@@ -33,8 +37,6 @@ const parseManifest = Schema.decodeEffect(Schema.fromJsonString(Manifest));
 
 const Commit = Schema.Struct({ sha: Schema.String });
 
-const parseCommit = Schema.decodeEffect(Schema.fromJsonString(Commit));
-
 const usage = "Usage: bun scripts/update-herdr-schema.mts --tag <tag>";
 
 const parseArguments = (args: readonly string[]): { readonly tag: string } | undefined =>
@@ -51,24 +53,6 @@ const formatFile = Effect.fn("HerdrSchema.format")(function* (filepath: string, 
   });
 });
 
-/** GitHub reads, authenticated when GH_TOKEN or GITHUB_TOKEN is set. */
-const github = Effect.gen(function* () {
-  const client = yield* HttpClient.HttpClient;
-
-  const ghToken = yield* Config.option(Config.Redacted("GH_TOKEN"));
-  const githubToken = yield* Config.option(Config.Redacted("GITHUB_TOKEN"));
-  const token = Option.orElse(ghToken, () => githubToken);
-
-  return client.pipe(
-    HttpClient.filterStatusOk,
-    HttpClient.mapRequest((request) =>
-      Option.isSome(token)
-        ? HttpClientRequest.bearerToken(request, Redacted.value(token.value))
-        : request,
-    ),
-  );
-});
-
 const updateSchema = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const options = parseArguments(process.argv.slice(2));
@@ -79,18 +63,17 @@ const updateSchema = Effect.gen(function* () {
     return yield* new SchemaUpdateError({ message: usage });
   }
 
-  const client = yield* github;
+  const commit = yield* Api.json(
+    { endpoint: `repos/${repository}/commits/${options.tag}`, method: "GET" },
+    Commit,
+  );
 
-  const commit = yield* client
-    .get(`https://api.github.com/repos/${repository}/commits/${options.tag}`)
-    .pipe(
-      Effect.flatMap((response) => response.text),
-      Effect.flatMap(parseCommit),
-    );
-
-  const source = yield* client
-    .get(`https://raw.githubusercontent.com/${repository}/${options.tag}/${schemaPath}`)
-    .pipe(Effect.flatMap((response) => response.text));
+  const source = yield* Api.text({
+    endpoint: `repos/${repository}/contents/${schemaPath}`,
+    method: "GET",
+    query: { ref: options.tag },
+    headers: { Accept: "application/vnd.github.raw+json" },
+  });
 
   const document = yield* parseSchemaDocument(source);
 
@@ -121,10 +104,15 @@ const updateSchema = Effect.gen(function* () {
   );
 });
 
+const gh = ghLayer({ timeout: "1 minute" }).pipe(
+  Layer.provide(NodeChildProcessSpawner.layer),
+  Layer.provide([NodeFileSystem.layer, NodePath.layer]),
+);
+
 NodeRuntime.runMain(
   updateSchema.pipe(
     Effect.timeout("2 minutes"),
-    Effect.provide([NodeFileSystem.layer, FetchHttpClient.layer]),
+    Effect.provide([NodeFileSystem.layer, gh]),
     Effect.catch((error) =>
       Effect.sync(() => {
         console.error(

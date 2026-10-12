@@ -766,7 +766,9 @@ also need one in the repositories that use the SDK.
 
 Run the same update by hand with `mise run tooling:update <tag>`, which refreshes the schema through
 [scripts/update-herdr-schema.mts](scripts/update-herdr-schema.mts), regenerates `src/generated` and
-records the tag; `mise run tooling:status` prints whether a newer release exists.
+records the tag; `mise run tooling:status` prints whether a newer release exists. The refresh reads
+GitHub through the [GitHub CLI](https://cli.github.com/) pinned in [mise.toml](mise.toml), so it
+needs `gh` to be authenticated (`gh auth login`, or `GH_TOKEN` in automation).
 
 ## Releases
 
