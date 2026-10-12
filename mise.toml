@@ -68,11 +68,13 @@ run = "tooling-drift status"
 description = "Bundle the Herdr schema from a herdrdev/herdr release, then regenerate the wire types"
 depends = ["install"]
 depends_post = ["generate"]
-run = 'bun scripts/update-herdr-schema.mts --tag {{arg(name="tag")}}'
+usage = 'arg "<tag>" help="Release tag, e.g. v0.9.3"'
+run = "bun scripts/update-herdr-schema.mts --tag $usage_tag"
 
 [tasks."tooling:update"]
 description = "Refresh the bundled schema at a herdrdev/herdr release and record it in tooling.yml"
-run = 'tooling-drift update herdrdev/herdr {{arg(name="tag")}}'
+usage = 'arg "<tag>" help="Release tag, e.g. v0.9.3"'
+run = "tooling-drift update herdrdev/herdr $usage_tag"
 
 [tasks."tooling:publish"]
 description = "Open or refresh a pull request when a newer Herdr release is out"
