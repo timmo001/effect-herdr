@@ -57,3 +57,12 @@ run = "bun run generate"
 description = "Fail when generated wire types differ from the bundled Herdr schema"
 depends = ["generate"]
 run = 'git diff --exit-code -- src/generated && test -z "$(git status --porcelain -- src/generated)"'
+
+[tasks."tooling:status"]
+description = "Compare the reviewed Herdr release in tooling.yml with the latest herdrdev/herdr release"
+run = "scripts/tooling-drift.sh status"
+
+[tasks."tooling:update"]
+description = "Bundle the Herdr schema from a herdrdev/herdr release, regenerate wire types and record it in tooling.yml"
+depends = ["install"]
+run = 'scripts/tooling-update.sh {{arg(name="tag")}}'

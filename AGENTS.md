@@ -18,6 +18,8 @@ documents usage and development; [FORK.md](FORK.md) covers the fork and upstream
 - Use `mise run format`, `mise run check` and `mise run build` for validation.
 - `mise run generate` rewrites `src/generated` from the bundled schema; `mise run generate:check`
   fails on drift. Generated wire types stay private.
+- `tooling.yml` records the reviewed Herdr release and `herdr` in `package.json` the bundled
+  schema's protocol and commit. Move them with `mise run tooling:update <tag>`, never by hand.
 - `src/index.ts` is the package entrypoint; `dist/` is generated and untracked.
 - Use lowercase filenames, with kebab-case for multiword names.
 - Use the shared `@timmo001/oxlint-rules/configs/recommended-effect` preset and
