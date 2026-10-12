@@ -748,6 +748,26 @@ explicit side effects and are not verification commands.
 `src/schema/herdr-api.schema.json`; `mise run generate:check` fails when they drift. Generated wire
 contracts remain private; [src/index.ts](src/index.ts) owns the public entrypoint.
 
+### Tooling drift
+
+[tooling.yml](tooling.yml) records the Herdr release the bundled schema was last reviewed against,
+and `herdr.upstreamCommit` in [package.json](package.json) the Herdr commit it came from. This
+tracks Herdr itself ([herdrdev/herdr](https://github.com/herdrdev/herdr/releases)); the SDK fork's
+upstream is a different thing, handled by the **Sync upstream** workflow in [FORK.md](FORK.md).
+
+The daily **Tooling drift** workflow runs `mise run tooling:publish`, the
+[tooling-drift](https://github.com/timmo001/tooling-drift) tool pinned in [mise.toml](mise.toml).
+It compares the reviewed release with the latest Herdr release and, when it moves, runs
+`mise run tooling:refresh <tag>` to bundle the API schema from that release and regenerate the wire
+types, then opens one pull request: `[Pin-only] Update herdrdev/herdr to <tag>` with squash
+auto-merge when the schema is unchanged, or `Update herdrdev/herdr to <tag>` for review when it
+changed. CI on that pull request shows where the SDK no longer matches the schema; a change here may
+also need one in the repositories that use the SDK.
+
+Run the same update by hand with `mise run tooling:update <tag>`, which refreshes the schema through
+[scripts/update-herdr-schema.mts](scripts/update-herdr-schema.mts), regenerates `src/generated` and
+records the tag; `mise run tooling:status` prints whether a newer release exists.
+
 ## Releases
 
 To inspect the package locally, run `mise exec -- npm pack --dry-run`; the pack hook builds

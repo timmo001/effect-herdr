@@ -3,6 +3,8 @@ min_version = "2025.1.0"
 [tools]
 node = "26.11.1"
 bun = "1.4.3"
+# Approved for aube's package-age check while the package is under 30 days old.
+"npm:@timmo001/tooling-drift" = { version = "0.1.0", allow_low_downloads = true }
 
 [tasks.install]
 description = "Install dependencies"
@@ -57,3 +59,21 @@ run = "bun run generate"
 description = "Fail when generated wire types differ from the bundled Herdr schema"
 depends = ["generate"]
 run = 'git diff --exit-code -- src/generated && test -z "$(git status --porcelain -- src/generated)"'
+
+[tasks."tooling:status"]
+description = "Compare the reviewed Herdr release in tooling.yml with the latest herdrdev/herdr release"
+run = "tooling-drift status"
+
+[tasks."tooling:refresh"]
+description = "Bundle the Herdr schema from a herdrdev/herdr release, then regenerate the wire types"
+depends = ["install"]
+depends_post = ["generate"]
+run = 'bun scripts/update-herdr-schema.mts --tag {{arg(name="tag")}}'
+
+[tasks."tooling:update"]
+description = "Refresh the bundled schema at a herdrdev/herdr release and record it in tooling.yml"
+run = 'tooling-drift update herdrdev/herdr {{arg(name="tag")}}'
+
+[tasks."tooling:publish"]
+description = "Open or refresh a pull request when a newer Herdr release is out"
+run = "tooling-drift publish"
