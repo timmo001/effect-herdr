@@ -751,13 +751,17 @@ contracts remain private; [src/index.ts](src/index.ts) owns the public entrypoin
 ### Tooling drift
 
 [tooling.yml](tooling.yml) records the Herdr release the bundled schema was last reviewed against,
-and `herdr.upstreamCommit` in [package.json](package.json) the commit it came from. The daily
-**Tooling drift** workflow compares the reviewed release with the latest
-[herdrdev/herdr](https://github.com/herdrdev/herdr/releases) release. When it moves, the workflow
-bundles the API schema from that release, regenerates the wire types and opens one pull request
-for it: `[Pin-only] Update herdrdev/herdr to <tag>` with squash auto-merge when the schema is
-unchanged, or `Update herdrdev/herdr to <tag>` for review when it changed. CI on that pull request
-shows where the SDK no longer matches the schema.
+and `herdr.upstreamCommit` in [package.json](package.json) the Herdr commit it came from. This
+tracks Herdr itself ([herdrdev/herdr](https://github.com/herdrdev/herdr/releases)); the SDK fork's
+upstream is a different thing, handled by the **Sync upstream** workflow in [FORK.md](FORK.md).
+
+The daily **Tooling drift** workflow runs [scripts/tooling-drift.sh](scripts/tooling-drift.sh), a
+copy of the one in the `tooling-drift` skill, which compares the reviewed release with the latest
+Herdr release. When it moves, the script bundles the API schema from that release, regenerates the
+wire types and opens one pull request: `[Pin-only] Update herdrdev/herdr to <tag>` with squash
+auto-merge when the schema is unchanged, or `Update herdrdev/herdr to <tag>` for review when it
+changed. CI on that pull request shows where the SDK no longer matches the schema; a change here may
+also need one in the repositories that use the SDK.
 
 Run the same update by hand with `mise run tooling:update <tag>`, which fetches the schema from
 that release, runs [scripts/update-herdr-schema.mjs](scripts/update-herdr-schema.mjs), regenerates

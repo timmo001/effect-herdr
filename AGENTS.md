@@ -19,7 +19,9 @@ documents usage and development; [FORK.md](FORK.md) covers the fork and upstream
 - `mise run generate` rewrites `src/generated` from the bundled schema; `mise run generate:check`
   fails on drift. Generated wire types stay private.
 - `tooling.yml` records the reviewed Herdr release and `herdr` in `package.json` the bundled
-  schema's protocol and commit. Move them with `mise run tooling:update <tag>`, never by hand.
+  schema's protocol and commit. Move them with `mise run tooling:update <tag>`, never by hand,
+  and use the `tooling-drift` skill for reviews. Herdr is the tool; the SDK fork's upstream is
+  covered by FORK.md.
 - `src/index.ts` is the package entrypoint; `dist/` is generated and untracked.
 - Use lowercase filenames, with kebab-case for multiword names.
 - Use the shared `@timmo001/oxlint-rules/configs/recommended-effect` preset and

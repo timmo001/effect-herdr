@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Bundle the Herdr API schema from a herdrdev/herdr release, regenerate the
-# wire types and record that release as reviewed in tooling.yml. Needs gh
-# for the GitHub API reads.
+# Bundle the Herdr API schema from a herdrdev/herdr release and regenerate
+# the wire types. Needs gh for the GitHub API reads.
+# `scripts/tooling-drift.sh update herdrdev/herdr <tag>` runs it, then
+# records the tag in tooling.yml.
 #
 #   scripts/tooling-update.sh <tag>
 set -euo pipefail
@@ -21,8 +22,3 @@ gh api -H 'Accept: application/vnd.github.raw+json' \
 
 node scripts/update-herdr-schema.mjs --schema "$directory/herdr-api.schema.json" --commit "$commit"
 bun run generate
-
-sed -i.bak "s|^\( *reviewed: *\).*\$|\1$tag|" tooling.yml
-rm tooling.yml.bak
-
-echo "Reviewed $repo at $tag ($commit)"

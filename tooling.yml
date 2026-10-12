@@ -1,7 +1,13 @@
 ---
-# Tool releases this SDK was last reviewed against. The tooling drift
-# workflow compares each with the repository's latest release and opens a
-# pull request when it moves. Update it with `mise run tooling:update <tag>`.
+# Tool releases this SDK was last reviewed against. scripts/tooling-drift.sh
+# (from the tooling-drift skill) compares each with the latest release and
+# opens a pull request when it moves; its header documents this file. This
+# tracks Herdr itself; the SDK fork's upstream (dmmulroy/herdr-ts-sdk) is
+# merged by the Sync upstream workflow instead, see FORK.md.
+assignee: timmo001
 tools:
   - repo: herdrdev/herdr
     reviewed: v0.9.2
+    update: scripts/tooling-update.sh
+    pins: tooling.yml package.json
+    review: Adapt the SDK where CI fails against the new schema, and update the README protocol notes and docs/sdk-v1-parity.md to match. Repositories that use the SDK may need the same change.

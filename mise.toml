@@ -65,4 +65,4 @@ run = "scripts/tooling-drift.sh status"
 [tasks."tooling:update"]
 description = "Bundle the Herdr schema from a herdrdev/herdr release, regenerate wire types and record it in tooling.yml"
 depends = ["install"]
-run = 'scripts/tooling-update.sh {{arg(name="tag")}}'
+run = 'scripts/tooling-drift.sh update herdrdev/herdr {{arg(name="tag")}}'
