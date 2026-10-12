@@ -3,6 +3,7 @@ min_version = "2025.1.0"
 [tools]
 node = "26.11.1"
 bun = "1.4.3"
+"npm:@timmo001/tooling-drift" = "0.1.0"
 
 [tasks.install]
 description = "Install dependencies"
@@ -60,9 +61,22 @@ run = 'git diff --exit-code -- src/generated && test -z "$(git status --porcelai
 
 [tasks."tooling:status"]
 description = "Compare the reviewed Herdr release in tooling.yml with the latest herdrdev/herdr release"
-run = "scripts/tooling-drift.sh status"
+run = "tooling-drift status"
+
+[tasks."tooling:refresh"]
+description = "Bundle the Herdr schema from a herdrdev/herdr release and regenerate the wire types"
+depends = ["install"]
+run = [
+  'bun scripts/update-herdr-schema.mts --tag {{arg(name="tag")}}',
+  "bun run generate",
+]
 
 [tasks."tooling:update"]
-description = "Bundle the Herdr schema from a herdrdev/herdr release, regenerate wire types and record it in tooling.yml"
+description = "Refresh the bundled schema at a herdrdev/herdr release and record it in tooling.yml"
 depends = ["install"]
-run = 'scripts/tooling-drift.sh update herdrdev/herdr {{arg(name="tag")}}'
+run = 'tooling-drift update herdrdev/herdr {{arg(name="tag")}}'
+
+[tasks."tooling:publish"]
+description = "Open or refresh a pull request when a newer Herdr release is out"
+depends = ["install"]
+run = "tooling-drift publish"
