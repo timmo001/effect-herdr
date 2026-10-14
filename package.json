@@ -1,6 +1,6 @@
 {
   "name": "@timmo001/effect-herdr",
-  "version": "0.9.0-timmo001.0",
+  "version": "0.9.0-timmo001.1",
   "description": "Effect-native TypeScript SDK for Herdr's local socket API.",
   "homepage": "https://github.com/timmo001/effect-herdr#readme",
   "bugs": {
@@ -50,32 +50,33 @@
     "prepack": "bun run build"
   },
   "dependencies": {
-    "@effect/platform-node-shared": "4.0.2",
+    "@effect/platform-node-shared": "4.0.4",
     "ajv": "8.20.0",
-    "effect": "4.0.2"
+    "effect": "4.0.4"
   },
   "devDependencies": {
-    "@effect/tsgo": "0.51.1",
+    "@effect/tsgo": "0.52.0",
     "@oxlint/plugins": "1.87.0",
+    "@timmo001/effect-gh": "0.7.0",
     "@timmo001/oxlint-rules": "0.6.2",
     "@types/node": "26.6.5",
     "json-schema-to-typescript": "16.0.0",
     "oxlint": "1.87.0",
-    "oxlint-tsgolint": "7.0.2003",
-    "prettier": "3.9.9",
+    "oxlint-tsgolint": "7.0.2004",
+    "prettier": "3.9.10",
     "typescript": "7.0.2",
     "vite": "8.3.4",
-    "vitest": "5.0.3"
+    "vitest": "5.0.4"
   },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "bun@1.4.2",
+  "packageManager": "bun@1.4.3",
   "trustedDependencies": [
     "@effect/tsgo"
   ],
   "herdr": {
     "protocol": 22,
-    "upstreamCommit": "48292af8e33a08c8030b7f1512c8d0da739f5ab1"
+    "upstreamCommit": "7e26bad94044eba205033111a0ce8033ede7e24f"
   }
 }
