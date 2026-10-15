@@ -58,7 +58,7 @@
     "@effect/tsgo": "0.53.0",
     "@oxlint/plugins": "1.88.0",
     "@timmo001/effect-gh": "0.7.0",
-    "@timmo001/oxlint-rules": "0.6.2",
+    "@timmo001/oxlint-rules": "0.6.3",
     "@types/node": "26.6.5",
     "json-schema-to-typescript": "16.0.0",
     "oxlint": "1.88.0",
