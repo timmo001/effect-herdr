@@ -29,25 +29,37 @@ export function isExpectedWireResult<Method extends WireMethod>(
 
 const SCHEMA_ID = "https://herdr.dev/herdr-api.schema.json";
 
-const ajv = new Ajv2020({ allErrors: true, strict: false, validateFormats: false });
+// Compiling the validators takes around 100ms, so wait until the first wire value needs them
+// rather than paying for it whenever the package is imported.
+let validators: ReturnType<typeof compileValidators> | undefined;
 
-ajv.addSchema({ ...herdrApiSchema, $id: SCHEMA_ID });
+function compileValidators() {
+  const ajv = new Ajv2020({ allErrors: true, strict: false, validateFormats: false });
 
-const parseSuccessResponse = ajv.compile<SuccessResponse>({
-  $ref: `${SCHEMA_ID}#/schemas/success_response`,
-});
+  ajv.addSchema({ ...herdrApiSchema, $id: SCHEMA_ID });
 
-const parseErrorResponse = ajv.compile<ErrorResponse>({
-  $ref: `${SCHEMA_ID}#/schemas/error_response`,
-});
+  return {
+    ajv,
+    parseSuccessResponse: ajv.compile<SuccessResponse>({
+      $ref: `${SCHEMA_ID}#/schemas/success_response`,
+    }),
+    parseErrorResponse: ajv.compile<ErrorResponse>({
+      $ref: `${SCHEMA_ID}#/schemas/error_response`,
+    }),
+    parseLifecycleEvent: ajv.compile<EventEnvelope>({
+      $ref: `${SCHEMA_ID}#/schemas/event`,
+    }),
+    parseSubscriptionEvent: ajv.compile<SubscriptionEventEnvelope>({
+      $ref: `${SCHEMA_ID}#/schemas/subscription_event`,
+    }),
+  };
+}
 
-const parseLifecycleEvent = ajv.compile<EventEnvelope>({
-  $ref: `${SCHEMA_ID}#/schemas/event`,
-});
+function wireValidators() {
+  validators ??= compileValidators();
 
-const parseSubscriptionEvent = ajv.compile<SubscriptionEventEnvelope>({
-  $ref: `${SCHEMA_ID}#/schemas/subscription_event`,
-});
+  return validators;
+}
 
 /**
  * Parses an untrusted wire response into the generated success or error contract.
@@ -60,6 +72,8 @@ export function parseHerdrWireResponse(
   value: unknown,
   requestId: string,
 ): SuccessResponse | ErrorResponse {
+  const { parseSuccessResponse, parseErrorResponse } = wireValidators();
+
   if (parseSuccessResponse(value) || parseErrorResponse(value)) return value;
   throw invalidWireValue("response", requestId, [
     ...(parseSuccessResponse.errors ?? []),
@@ -69,7 +83,7 @@ export function parseHerdrWireResponse(
 
 /** Checks whether an untrusted line is a schema-valid error response. @category decoding @since 0.9.2 */
 export function isHerdrWireErrorResponse(value: unknown): value is ErrorResponse {
-  return parseErrorResponse(value);
+  return wireValidators().parseErrorResponse(value);
 }
 
 /**
@@ -83,6 +97,8 @@ export function parseHerdrWireEvent(
   value: unknown,
   requestId: string,
 ): EventEnvelope | SubscriptionEventEnvelope {
+  const { parseLifecycleEvent, parseSubscriptionEvent } = wireValidators();
+
   if (parseLifecycleEvent(value) || parseSubscriptionEvent(value)) return value;
   throw invalidWireValue("event", requestId, [
     ...(parseLifecycleEvent.errors ?? []),
@@ -95,7 +111,7 @@ function invalidWireValue(
   requestId: string,
   errors: readonly ErrorObject[],
 ): Error {
-  const detail = ajv.errorsText(errors.slice(0, 5), { separator: "; " });
+  const detail = wireValidators().ajv.errorsText(errors.slice(0, 5), { separator: "; " });
 
   return new Error(`Herdr wire ${kind} failed schema parsing for request ${requestId}: ${detail}`);
 }
