@@ -29,8 +29,8 @@ export function isExpectedWireResult<Method extends WireMethod>(
 
 const SCHEMA_ID = "https://herdr.dev/herdr-api.schema.json";
 
-// Compiling the validators takes around 100ms, so wait until the first wire value needs them
-// rather than paying for it whenever the package is imported.
+// Compiling the validators takes around 100ms, so wait until a transport is built rather than
+// paying for it whenever the package is imported.
 let validators: ReturnType<typeof compileValidators> | undefined;
 
 function compileValidators() {
@@ -59,6 +59,17 @@ function wireValidators() {
   validators ??= compileValidators();
 
   return validators;
+}
+
+/**
+ * Compiles the wire validators ahead of the first request, so compiling them never counts
+ * against a request's deadline.
+ *
+ * @category decoding
+ * @since 0.9.0
+ */
+export function prepareHerdrWireParsers(): void {
+  wireValidators();
 }
 
 /**

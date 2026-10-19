@@ -33,7 +33,11 @@ import {
 import type { ErrorResponse } from "./generated/wire-error-response.ts";
 import herdrApiSchema from "./schema/herdr-api.schema.json" with { type: "json" };
 import type { ResponseResult } from "./generated/wire-success-response.ts";
-import { isExpectedWireResult, parseHerdrWireResponse } from "./herdr-wire-parser.ts";
+import {
+  isExpectedWireResult,
+  parseHerdrWireResponse,
+  prepareHerdrWireParsers,
+} from "./herdr-wire-parser.ts";
 import { encodeWireRequest, type HerdrWireParameters } from "./herdr-wire-encoder.ts";
 import { HerdrConfig, HerdrRequestDeadline, herdrConfigLayer } from "./herdr-config.ts";
 import type { HerdrAbsolutePath } from "./herdr-domain.ts";
@@ -258,6 +262,8 @@ function traceHerdrTransportPhase<
  */
 export const makeHerdrTransport = Effect.gen(function* () {
   const config = yield* HerdrConfig;
+
+  yield* Effect.sync(prepareHerdrWireParsers);
 
   const requestWithoutCompatibility = <Method extends WireMethod>(
     operation: TransportOperation,
