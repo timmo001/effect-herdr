@@ -6,7 +6,12 @@
 import { Buffer } from "node:buffer";
 import { Match, Result } from "effect";
 import { HerdrEndpointInvalidMessage } from "./herdr-endpoint-errors.ts";
-import type { ClientShellKeyInput, ClientShellMouseInput } from "./herdr-client-shell-input.ts";
+import type {
+  ClientShellHostColor,
+  ClientShellHostThemeInput,
+  ClientShellKeyInput,
+  ClientShellMouseInput,
+} from "./herdr-client-shell-input.ts";
 
 const utf8 = new TextDecoder("utf-8", { fatal: true });
 
@@ -575,4 +580,39 @@ export function encodeEndpointPreference(
     encodeUnsigned(preference === "focus" ? 18 : 19),
     Buffer.from([enabled ? 1 : 0]),
   ]);
+}
+
+// bincode writes u8 fields as one raw byte; only enum variants and Vec lengths are varints.
+function encodeHostColor(color: ClientShellHostColor): Buffer {
+  return Buffer.from([color.r, color.g, color.b]);
+}
+
+/**
+ * Encodes a parsed host terminal theme update (`ClientShellHostTheme`, client message tag 17).
+ * @category encoding @since 0.9.5
+ */
+export function encodeEndpointHostTheme(input: ClientShellHostThemeInput): Uint8Array {
+  const update = Match.value(input).pipe(
+    Match.discriminatorsExhaustive("kind")({
+      defaultColor: (theme) => [
+        encodeUnsigned(0),
+        encodeUnsigned(theme.target === "foreground" ? 0 : 1),
+        encodeHostColor(theme.color),
+      ],
+      palette: (theme) => [
+        encodeUnsigned(1),
+        encodeUnsigned(theme.colors.length),
+        ...theme.colors.flatMap((entry) => [
+          Buffer.from([entry.index]),
+          encodeHostColor(entry.color),
+        ]),
+      ],
+      appearance: (theme) => [
+        encodeUnsigned(2),
+        encodeUnsigned(theme.appearance === "dark" ? 0 : 1),
+      ],
+    }),
+  );
+
+  return frameEndpointPayload([encodeUnsigned(17), ...update]);
 }
