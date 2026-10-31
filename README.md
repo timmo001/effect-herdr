@@ -529,12 +529,13 @@ Connection input also accepts `initialSurface` (`inactive` by default), `mouseCa
 
 Connection operations:
 
-- `snapshot()`, `projections`: current metadata and coalesced replacement projections.
+- `snapshot()`, `projections`: current metadata and coalesced replacement projections. Each projection carries `agentView` (`none`, `active` with the decoded view, or `unrecognized`) and per-agent `completionSeq`, both bound from Herdr's revision-matched companion messages.
 - `surface.set({ active })`, `surface.state()`, `surface.states`, `surface.awaitReady()`, `surface.resize(input)`.
 - `input.paste(paneId, { text })`, `input.text(paneId, { text })`, `input.key(paneId, input)`, `input.mouse(paneId, input)`; explicit popup-terminal variants are `pasteInPopup`, `textInPopup`, `keyInPopup`, `mouseInPopup`.
 - `commands.invoke` / `invokeInWorkspace` / `invokeInTab` / `invokeInPane`: same target intent as socket commands, but the first argument is a discovered `ClientShellCommand` from this connection's snapshot.
 - `productAnnouncements.dismiss(input)`, `releaseNotes.dismiss(input)`.
 - `setFocused(boolean)`, `setMouseCapture(boolean)`, `connectionState()`, `awaitClosed()`.
+- `setHostTheme(input)`: forwards the outer terminal's default foreground or background colour, 1-256 palette entries, or dark/light appearance so pane applications match it. Herdr sends no acknowledgement.
 - `events`: live semantic notifications and host presentation instructions; the SDK does not execute clipboard, graphics escapes, sound, or window-title effects itself.
 
 `client_shell.surface.set` is connection-local. An activation ACK establishes a projection floor, not delivered presentation; wait for `surface.awaitReady()` separately. Patches require an exact base and are applied before publishing complete surfaces. Graphics asset bytes are retained for coalesced scenes. `direct_graphics` is deliberately not negotiated: server-supplied graphics file paths are never opened. This SDK is an endpoint client, not a host TUI renderer or saved-SSH-machine manager.
