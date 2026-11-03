@@ -756,18 +756,16 @@ and `herdr.upstreamCommit` in [package.json](package.json) the Herdr commit it c
 tracks Herdr itself ([herdrdev/herdr](https://github.com/herdrdev/herdr/releases)); the SDK fork's
 upstream is a different thing, handled by the **Sync upstream** workflow in [FORK.md](FORK.md).
 
-The daily **Tooling drift** workflow runs `mise run tooling:publish`, the
-[tooling-drift](https://github.com/timmo001/tooling-drift) tool pinned in [mise.toml](mise.toml).
-It compares the reviewed release with the latest Herdr release and, when it moves, runs
-`mise run tooling:refresh <tag>` to bundle the API schema from that release and regenerate the wire
-types, then opens one pull request: `[Pin-only] Update herdrdev/herdr to <tag>` with squash
-auto-merge when the schema is unchanged, or `Update herdrdev/herdr to <tag>` for review when it
-changed. CI on that pull request shows where the SDK no longer matches the schema; a change here may
-also need one in the repositories that use the SDK.
+The daily drift job in [Upkeep](https://github.com/timmo001/upkeep) (see
+[upkeep.timmo.dev/running#drift](https://upkeep.timmo.dev/running#drift)) compares the reviewed
+release with the latest Herdr release and, when it moves, runs `mise run tooling:refresh <tag>` to
+bundle the API schema from that release and regenerate the wire types, then opens one pull request.
+CI on that pull request shows where the SDK no longer matches the schema; a change here may also
+need one in the repositories that use the SDK.
 
-Run the same update by hand with `mise run tooling:update <tag>`, which refreshes the schema through
-[scripts/update-herdr-schema.mts](scripts/update-herdr-schema.mts), regenerates `src/generated` and
-records the tag; `mise run tooling:status` prints whether a newer release exists. The refresh reads
+Run the refresh by hand with `mise run tooling:refresh <tag>`, which bundles the schema through
+[scripts/update-herdr-schema.mts](scripts/update-herdr-schema.mts) and regenerates `src/generated`,
+then set `reviewed` in [tooling.yml](tooling.yml) to the tag. The refresh reads
 GitHub through the [GitHub CLI](https://cli.github.com/) pinned in [mise.toml](mise.toml), so it
 needs `gh` to be authenticated (`gh auth login`, or `GH_TOKEN` in automation).
 
