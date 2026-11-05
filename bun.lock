@@ -12,7 +12,7 @@
         "@effect/tsgo": "0.67.3",
         "@oxlint/plugins": "1.91.0",
         "@timmo001/effect-gh": "0.10.0",
-        "@timmo001/oxlint-rules": "0.6.3",
+        "@timmo001/oxlint-rules": "0.6.4",
         "@types/node": "26.6.6",
         "effect": "4.1.2",
         "json-schema-to-typescript": "16.0.0",
@@ -148,7 +148,7 @@
 
     "@timmo001/effect-gh": ["@timmo001/effect-gh@0.10.0", "", { "dependencies": { "graphql": "17.0.2" }, "peerDependencies": { "effect": "4.1.2" } }, "sha512-5qiA+g9BT7YPxB7co/rrL4O70t+p0i1DLqldCJv6fJ/4guBbeEGr8EGYn/nuYvGYoG18yTvimZp7qVJEHajtZA=="],
 
-    "@timmo001/oxlint-rules": ["@timmo001/oxlint-rules@0.6.3", "", { "peerDependencies": { "@oxlint/plugins": "1.88.0", "oxlint": "1.88.0" }, "bin": { "oxlint-rules": "dist/cli.js" } }, "sha512-DxIid4Bu5t8bLuWcAIZlikLVLabSrJ1ai2siFB+E+7HdY3TPMgsUU44/Is+9RAQYVH8LEYjOQFVedH5MOXL5YQ=="],
+    "@timmo001/oxlint-rules": ["@timmo001/oxlint-rules@0.6.4", "", { "peerDependencies": { "@oxlint/plugins": "^1.91.0", "oxlint": "^1.91.0" }, "bin": { "oxlint-rules": "dist/cli.js" } }, "sha512-FHVvFrgyhw8JuE+eL+1/ABEWTynttmornkOU5a2WutAZeAkNQK38olP//u0OGOEKgtmHORTbUWD9jq9CmeJXmA=="],
 
     "@types/chai": ["@types/chai@5.2.3", "", { "dependencies": { "@types/deep-eql": "*", "assertion-error": "^2.0.1" } }, "sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA=="],
 
