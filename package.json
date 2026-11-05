@@ -51,8 +51,10 @@
   },
   "dependencies": {
     "@effect/platform-node-shared": "4.1.2",
-    "ajv": "8.20.0",
-    "effect": "4.1.2"
+    "ajv": "8.20.0"
+  },
+  "peerDependencies": {
+    "effect": "^4.1.2"
   },
   "devDependencies": {
     "@effect/tsgo": "0.67.1",
@@ -60,6 +62,7 @@
     "@timmo001/effect-gh": "0.10.0",
     "@timmo001/oxlint-rules": "0.6.3",
     "@types/node": "26.6.6",
+    "effect": "4.1.2",
     "json-schema-to-typescript": "16.0.0",
     "oxlint": "1.91.0",
     "oxlint-tsgolint": "7.0.2005",
