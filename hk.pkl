@@ -1,0 +1,4 @@
+// Pre-push checks: the shared lints from timmo001/workflows (Markdown, YAML,
+// Actions, shell and Oxlint) on the files a push changes. Tests, types and
+// formatting are left to CI and `mise run check`. Run them by hand with `hk check`.
+amends "package://github.com/timmo001/workflows/releases/download/20261114.0/hk-base@20261114.0.0#/base.pkl"

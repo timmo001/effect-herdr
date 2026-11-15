@@ -5,10 +5,22 @@ node = "26.13.1"
 bun = "1.4.4"
 # GitHub CLI for the Herdr schema refresh (scripts/update-herdr-schema.mts reads GitHub through gh).
 gh = "2.104.0"
+# The linters the hk pre-push hook runs, matching the shared lint workflows.
+hk = "2.12.0"
+pkl = "0.33.0"
+uv = "0.13.8"
+"pipx:yamllint" = "1.38.0"
+"npm:markdownlint-cli2" = "0.24.1"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
 
 [tasks.install]
 description = "Install dependencies"
 run = "bun install --frozen-lockfile"
+
+[tasks."install:hooks"]
+description = "Install the hk pre-push hook (shared lints on the files a push changes)"
+run = "hk install"
 
 [tasks.lint]
 description = "Lint source with the shared Oxlint rules"
