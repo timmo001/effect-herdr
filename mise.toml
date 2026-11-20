@@ -2,7 +2,7 @@ min_version = "2025.1.0"
 
 [tools]
 node = "26.13.1"
-bun = "1.4.4"
+bun = "1.4.5"
 # GitHub CLI for the Herdr schema refresh (scripts/update-herdr-schema.mts reads GitHub through gh).
 gh = "2.105.0"
 # The linters the hk pre-push hook runs, matching the shared lint workflows.
