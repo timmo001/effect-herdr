@@ -59,7 +59,7 @@
   "devDependencies": {
     "@effect/tsgo": "0.73.4",
     "@oxlint/plugins": "1.94.0",
-    "@timmo001/effect-gh": "0.13.2",
+    "@timmo001/effect-gh": "0.14.0",
     "@timmo001/oxlint-rules": "0.7.1",
     "@types/node": "26.6.6",
     "effect": "4.1.4",
