@@ -61,7 +61,7 @@
     "@oxlint/plugins": "1.95.0",
     "@timmo001/effect-gh": "0.14.0",
     "@timmo001/oxlint-rules": "0.7.1",
-    "@types/node": "26.6.6",
+    "@types/node": "26.6.7",
     "effect": "4.1.4",
     "json-schema-to-typescript": "16.0.0",
     "oxlint": "1.95.0",
